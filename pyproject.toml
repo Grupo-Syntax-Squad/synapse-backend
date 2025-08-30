@@ -1,0 +1,83 @@
+[project]
+requires-python = ">=3.12"
+
+[tool.ruff]
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint]
+select = ["E1", "E2", "E3", "E4", "E7", "E9", "F"]
+ignore = []
+preview = true
+
+# Permite correção para todas as regras
+fixable = ["ALL"]
+unfixable = []
+
+# Definição de quais nomes de variaveis podem ser utilizadas sem ferir a regra de "variaveis não utilizadas"
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+skip-magic-trailing-comma = false
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+exclude = ["alembic/*"]
+strict = true
+no_implicit_reexport = false
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+
+[[tool.mypy.overrides]]
+module = "app.grpc.models.*"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
+module = ["grpc.*"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]  # Caminho relativo para a pasta de testes
+addopts = "--maxfail=1 --cov=. --cov-fail-under=70 --cov-report html --cov-report term-missing --cov-report xml:coverage_detailed.xml --junitxml=coverage.xml"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+parallel = true
+omit = ["*__init__.py", "*version.json", "tests/*", "src/schemas/*", "src/models/*", "alembic/*", "script/*"]
+concurrency = ["gevent", "thread"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
