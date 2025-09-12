@@ -28,10 +28,12 @@ class Settings:
         self.SECRET_KEY = os.getenv("SECRET_KEY", "default_secret_key")
         self.ALGORITHM = os.getenv("ALGORITHM", "HS256")
         self.ACCESS_TOKEN_EXPIRE_MINUTES = int(
-            os.getenv("TOKEN_EXPIRATION_TIME", 300000)
+            os.getenv("ACCESS_TOKEN_EXPIRATION_TIME_MINUTES", 15)
         )
-        self.NO_AUTH = os.getenv("NO_AUTH", False)
-
+        self.REFRESH_TOKEN_EXPIRE_DAYS = int(
+            os.getenv("REFRESH_TOKEN_EXPIRATION_TIME_DAYS", 7)
+        )
+        self.NO_AUTH = os.getenv("NO_AUTH", "False").lower() in ("1", "true", "yes")
         if (
             not self.DATABASE_URL
             or not self.SECRET_KEY
