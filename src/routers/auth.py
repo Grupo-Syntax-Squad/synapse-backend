@@ -55,6 +55,13 @@ def login_for_access_token(
 
         return BasicResponse(message="OK")
     
+@router.post("/logout")
+def logout(response: Response) -> BasicResponse[None]:
+    response.delete_cookie("access_token", path="/")
+    response.delete_cookie("refresh_token", path="/")
+    
+    return BasicResponse(message="Logout realizado com sucesso")
+    
 
 @router.post("/refresh")
 def refresh_token(
