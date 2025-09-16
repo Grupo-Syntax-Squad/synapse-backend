@@ -8,8 +8,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     NO_AUTH: bool
     LOKI_ENDPOINT: str
+    TOKEN_EXPIRATION_TIME: int
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
-settings = Settings()
+settings = Settings()  # type: ignore[call-arg]

@@ -8,6 +8,18 @@ services:
       - "80:80"
     networks:
       - monitoring-network
+    env_file:
+      - .env
+    depends_on:
+      - loki
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    networks:
+      - monitoring-network
 
   prometheus:
     image: prom/prometheus:latest
@@ -39,6 +51,7 @@ services:
     depends_on:
       - prometheus
       - synapse
+      - loki
 
 networks:
   monitoring-network:
