@@ -572,7 +572,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "cey70nr78gkjkf"
+        "uid": "P8E80F9AEF21F6940"
       },
       "fieldConfig": {
         "defaults": {
@@ -616,9 +616,7 @@
           "countRows": false,
           "enablePagination": true,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true
@@ -626,14 +624,10 @@
       "pluginVersion": "12.1.1",
       "targets": [
         {
-          "datasource": {
-            "type": "loki",
-            "uid": "cey70nr78gkjkf"
-          },
+          "datasource": "Loki",
           "direction": "backward",
           "editorMode": "code",
           "expr": "{application=\"synapse\"}",
-          "legendFormat": "{{class}}",
           "queryType": "range",
           "refId": "A"
         }

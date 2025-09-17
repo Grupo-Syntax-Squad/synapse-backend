@@ -63,8 +63,12 @@ class SynapseLogger:
     def _log(self, level: int, message: str, **kwargs: Any) -> None:
         class_name = self._get_class_name()
         extra = kwargs.pop("extra", {})
+
+        tags = extra.get("tags", {})
         if class_name:
-            extra["tags"] = {"class": class_name}
+            tags["class"] = class_name
+
+        extra["tags"] = tags
         self._logger.log(level, message, extra=extra, **kwargs)
 
     def info(self, message: str, **kwargs: Any) -> None:

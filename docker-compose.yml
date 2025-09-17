@@ -12,6 +12,22 @@ services:
       - .env
     depends_on:
       - loki
+      - postgres
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: synapse
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data # persist data outside of container
+    networks:
+      - monitoring-network
 
   loki:
     image: grafana/loki:latest
