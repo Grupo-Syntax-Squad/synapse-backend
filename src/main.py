@@ -7,7 +7,16 @@ from src.database.models import Test
 from src.modules.root import GetRoot
 from src.schemas.basic_response import BasicResponse
 
+from src.database.models import Base
+from src.database.get_db import engine
+from src.routers import auth, user
+
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI()
+
+app.include_router(auth.router)
+app.include_router(user.router)
 
 
 @app.get("/")
