@@ -5,10 +5,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
     ALGORITHM: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    ACCESS_TOKEN_EXPIRATION_TIME_MINUTES: int
+    REFRESH_TOKEN_EXPIRATION_TIME_DAYS: int
     NO_AUTH: bool
-    LOKI_ENDPOINT: str
     TOKEN_EXPIRATION_TIME: int
+    LOKI_ENDPOINT: str
+    ACCESS_TOKEN_EXPIRE_MINUTES = 15
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
