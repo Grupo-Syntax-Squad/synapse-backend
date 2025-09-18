@@ -55,6 +55,7 @@ def login_for_access_token(
 
         return BasicResponse(message="OK")
     
+
 @router.post("/logout")
 def logout(response: Response) -> BasicResponse[None]:
     response.delete_cookie("access_token", path="/")

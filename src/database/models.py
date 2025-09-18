@@ -36,7 +36,7 @@ class User(Base):  # type: ignore[valid-type, misc]
     last_access: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
-class Test(Base):
+class Test(Base):  # type: ignore[valid-type, misc]
     __tablename__ = "test"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String)
