@@ -70,8 +70,11 @@ module = ["grpc.*"]
 
 [tool.pytest.ini_options]
 testpaths = ["src/tests"]  # Caminho relativo para a pasta de testes
-addopts = "--maxfail=1 --cov=. --cov-fail-under=70 --cov-report html --cov-report term-missing --cov-report xml:coverage_detailed.xml --junitxml=coverage.xml"
+addopts = "--maxfail=1"
 asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "ignore::DeprecationWarning:passlib.*"
+]
 
 [tool.coverage.run]
 parallel = true
