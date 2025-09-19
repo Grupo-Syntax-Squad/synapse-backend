@@ -1,11 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class PostUser(BaseModel):
     username: str
-    email: str
+    email: EmailStr
     password: str
 
-    class Config:
-        orm_mode = True
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

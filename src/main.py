@@ -1,7 +1,9 @@
+import uvicorn
 from fastapi import Depends, FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy.orm import Session
 
+from src.settings import settings
 from src.database.get_db import get_db
 from src.database.models import Test
 from src.modules.root import GetRoot
@@ -34,3 +36,6 @@ def create_test(name: str, session: Session = Depends(get_db)) -> BasicResponse[
 
 
 Instrumentator().instrument(app).expose(app)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host=settings.HOST, port=settings.PORT)
