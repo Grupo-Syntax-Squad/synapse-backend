@@ -9,7 +9,7 @@ from src.schemas.basic_response import BasicResponse
 
 from src.database.models import Base
 from src.database.get_db import engine
-from src.routers import auth, user
+from src.routers import auth, report, user
 
 Base.metadata.create_all(bind=engine)
 
@@ -17,6 +17,7 @@ app = FastAPI()
 
 app.include_router(auth.router)
 app.include_router(user.router)
+app.include_router(report.router)
 
 
 @app.get("/")
