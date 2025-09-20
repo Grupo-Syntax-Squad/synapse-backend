@@ -1,2 +1,3 @@
-def test_hello_world() -> None:
-    assert 1 + 1 == 2
+class TestExample:
+    def test_sum(self) -> None:
+        assert 1 + 1 == 2

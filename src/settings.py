@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     NO_AUTH: bool
     TOKEN_EXPIRATION_TIME: int
     LOKI_ENDPOINT: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    HOST: str
+    PORT: int
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
