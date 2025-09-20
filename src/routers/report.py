@@ -18,8 +18,8 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 async def send_report(
     request: SendReport,
     background_tasks: BackgroundTasks,
-    current_user: CurrentUser = Depends(Auth.get_current_user),
-    session: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(Auth.get_current_user),  # type: ignore
+    session: Session = Depends(get_db),  # type: ignore
 ) -> BasicResponse[None]:
     PermissionValidator(current_user).execute()
     service = SendReportToSubscribers(

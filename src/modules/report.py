@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+from pydantic import SecretStr
 from sqlalchemy.orm import Session
 
 from src.database.models import DeliveredTo, Report, User
@@ -14,7 +15,7 @@ class SendReportToSubscribers:
         self.request = request
         self.conf = ConnectionConfig(
             MAIL_USERNAME=settings.MAIL_USERNAME,
-            MAIL_PASSWORD=settings.MAIL_PASSWORD,
+            MAIL_PASSWORD=SecretStr(settings.MAIL_PASSWORD),
             MAIL_FROM=settings.MAIL_FROM,
             MAIL_PORT=settings.MAIL_PORT,
             MAIL_SERVER=settings.MAIL_SERVER,
@@ -34,7 +35,7 @@ class SendReportToSubscribers:
                     detail=f"Relatório com id {self.request.report_id} não encontrado."
                 )
             
-            users = self.session.query(User).filter(User.receive_email == True).all()
+            users = self.session.query(User).filter(User.receive_email.is_(True)).all()
             if not users:
                 logger.warning("Nenhum usuário para enviar e-mail.")
                 return
@@ -48,7 +49,7 @@ class SendReportToSubscribers:
                     subject=self.request.subject,
                     recipients=[user.email],
                     body=report.content,
-                    subtype="html"
+                    subtype=MessageType.html
                 )
                 try:
                     await fm.send_message(message)
@@ -66,7 +67,6 @@ class SendReportToSubscribers:
             logger.info(f"E-mails enviados: {success_count}, falhas: {len(failed_users)}")
             logger.debug(f"Detalhes das falhas: {failed_users}")
         
-
         except Exception as e:
             logger.error(f"Erro ao processar envio de e-mails: {e}")
             raise HTTPException(

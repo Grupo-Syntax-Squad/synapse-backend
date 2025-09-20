@@ -22,6 +22,7 @@ class Example(Base):  # type: ignore[valid-type, misc]
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_onupdate=func.now())
 
+
 class User(Base):  # type: ignore[valid-type, misc]
     __tablename__ = "user"
 
@@ -34,6 +35,7 @@ class User(Base):  # type: ignore[valid-type, misc]
     receive_email: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
     last_update: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     last_access: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
 
 class Report(Base):   # type: ignore[valid-type, misc]
     __tablename__ = "report"
@@ -48,6 +50,7 @@ class Report(Base):   # type: ignore[valid-type, misc]
         back_populates="report",
         cascade="all, delete-orphan"
     )
+
 
 class DeliveredTo(Base):   # type: ignore[valid-type, misc]
     __tablename__ = "delivered_to"
