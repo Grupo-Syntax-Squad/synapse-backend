@@ -2,13 +2,11 @@ DROP TABLE IF EXISTS faturamento CASCADE;
 DROP TABLE IF EXISTS estoque CASCADE;
 DROP TABLE IF EXISTS clientes CASCADE;
 
--- Tabela clientes
 CREATE TABLE clientes (
     cod_cliente INT PRIMARY KEY,
     nome VARCHAR(100)
 );
 
--- Tabela estoque
 CREATE TABLE estoque (
     data DATE NOT NULL,
     cod_cliente INT NOT NULL,
@@ -25,7 +23,6 @@ CREATE TABLE estoque (
     FOREIGN KEY (cod_cliente) REFERENCES clientes(cod_cliente)
 );
 
--- Tabela faturamento
 CREATE TABLE faturamento (
     data DATE NOT NULL,
     cod_cliente INT NOT NULL,

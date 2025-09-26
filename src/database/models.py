@@ -2,7 +2,9 @@ from sqlalchemy.orm import Mapped, mapped_column, declarative_base
 from sqlalchemy import (
     Boolean,
     DateTime,
+    ForeignKey,
     Integer,
+    Numeric,
     String,
     func,
     text,
@@ -49,3 +51,47 @@ class Report(Base):  # type: ignore[valid-type, misc]
     name: Mapped[str] = mapped_column(String, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     content: Mapped[str] = mapped_column(String)
+
+
+class Clients(Base):  # type: ignore[valid-type, misc]
+    __tablename__ = "clientes"
+
+    cod_cliente: Mapped[int] = mapped_column(Integer, primary_key=True)
+    nome: Mapped[str | None] = mapped_column(String(100))
+
+
+class Estoque(Base):  # type: ignore[valid-type, misc]
+    __tablename__ = "estoque"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    data: Mapped[datetime] = mapped_column(DateTime)
+    cod_cliente: Mapped[int] = mapped_column(ForeignKey("clientes.cod_cliente"))
+    es_centro: Mapped[str] = mapped_column(String(50))
+    tipo_material: Mapped[str] = mapped_column(String(100))
+    origem: Mapped[str] = mapped_column(String(50))
+    cod_produto: Mapped[str] = mapped_column(String(50))
+    lote: Mapped[str] = mapped_column(String(50))
+    dias_em_estoque: Mapped[int] = mapped_column(Integer)
+    produto: Mapped[str] = mapped_column(String(100))
+    grupo_mercadoria: Mapped[str] = mapped_column(String(100))
+    es_totalestoque: Mapped[float] = mapped_column(Numeric)
+    SKU: Mapped[str] = mapped_column(String(50))
+
+
+class Faturamento(Base):  # type: ignore[valid-type, misc]
+    __tablename__ = "faturamento"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    data: Mapped[datetime] = mapped_column(DateTime)
+    cod_cliente: Mapped[int] = mapped_column(ForeignKey("clientes.cod_cliente"))
+    lote: Mapped[str] = mapped_column(String(50))
+    origem: Mapped[str] = mapped_column(String(50))
+    zs_gr_mercad: Mapped[str] = mapped_column(String(100))
+    produto: Mapped[str] = mapped_column(String(100))
+    cod_produto: Mapped[str] = mapped_column(String(50))
+    zs_centro: Mapped[str] = mapped_column(String(50))
+    zs_cidade: Mapped[str] = mapped_column(String(100))
+    zs_uf: Mapped[str] = mapped_column(String(10))
+    zs_peso_liquido: Mapped[float] = mapped_column(Numeric)
+    giro_sku_cliente: Mapped[float] = mapped_column(Numeric)
+    SKU: Mapped[str] = mapped_column(String(50))
