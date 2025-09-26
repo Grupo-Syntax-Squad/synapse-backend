@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     MAIL_PORT: int = 587
     MAIL_STARTTLS: bool = True
     MAIL_SSL_TLS: bool = False
+    HOST: str
+    PORT: int
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

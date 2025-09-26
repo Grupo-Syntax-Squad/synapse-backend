@@ -1,7 +1,9 @@
+import uvicorn
 from fastapi import Depends, FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy.orm import Session
 
+from src.settings import settings
 from src.database.get_db import get_db
 from src.database.models import Test
 from src.modules.root import GetRoot
@@ -9,11 +11,11 @@ from src.schemas.basic_response import BasicResponse
 
 from src.database.models import Base
 from src.database.get_db import engine
-from src.routers import auth, report, user
+from src.routers import auth, user, report
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(title="Synapse Backend")
 
 app.include_router(auth.router)
 app.include_router(user.router)
@@ -34,3 +36,6 @@ def create_test(name: str, session: Session = Depends(get_db)) -> BasicResponse[
 
 
 Instrumentator().instrument(app).expose(app)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host=settings.HOST, port=settings.PORT)
