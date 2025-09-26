@@ -41,7 +41,7 @@ class Report(Base):   # type: ignore[valid-type, misc]
     __tablename__ = "report"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     content: Mapped[str] = mapped_column(String, nullable=False)
 
@@ -68,11 +68,3 @@ class Test(Base):  # type: ignore[valid-type, misc]
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String)
 
-
-class Report(Base):  # type: ignore[valid-type, misc]
-    __tablename__ = "report"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column(String, unique=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    content: Mapped[str] = mapped_column(String)
