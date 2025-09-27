@@ -50,15 +50,6 @@ class CreateUser:
                 detail="Password cannot be empty",
             )
 
-        existing_username = self._session.execute(
-            select(User).where(User.username == self._request.username)
-        ).scalar_one_or_none()
-        if existing_username:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Username already taken",
-            )
-
         self._log.info("Checking if user with email already exists")
         existing_email = self._session.execute(
             select(User).where(User.email == self._request.email)

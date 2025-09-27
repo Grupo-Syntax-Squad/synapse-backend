@@ -55,23 +55,6 @@ class TestUser:
         assert response.status_code == status.HTTP_409_CONFLICT
         assert response.json()["detail"] == "Email already registered"
 
-    def test_create_two_users_with_same_username(self, client: TestClient) -> None:
-        payload1 = {
-            "username": "SameUser",
-            "email": "user1@gmail.com",
-            "password": "password123",
-        }
-        payload2 = {
-            "username": "SameUser",
-            "email": "user2@gmail.com",
-            "password": "password123",
-        }
-        response = client.post("/users/register", json=payload1)
-        assert response.status_code == status.HTTP_200_OK
-        response = client.post("/users/register", json=payload2)
-        assert response.status_code == status.HTTP_409_CONFLICT
-        assert response.json()["detail"] == "Username already taken"
-
     def test_create_user_without_username(self, client: TestClient) -> None:
         payload = {"email": "testuser@gmail.com", "password": "password123"}
         response = client.post("/users/register", json=payload)

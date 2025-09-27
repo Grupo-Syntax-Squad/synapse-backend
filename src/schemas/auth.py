@@ -12,5 +12,6 @@ class CurrentUser(BaseModel):
     username: str
     is_active: bool
     is_admin: bool
+    receive_email: bool
 
     model_config = ConfigDict(from_attributes=True)
