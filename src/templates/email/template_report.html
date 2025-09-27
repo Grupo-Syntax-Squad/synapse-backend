@@ -1,64 +1,60 @@
 <!DOCTYPE html>
-    <html lang="pt-BR">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>{{ subject }}</title>
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    background-color: #42009F;
-                    margin: 0;
-                    padding: 0;
-                }
-                .container {
-                    max-width: 600px;
-                    margin: auto;
-                    background-color: #ffffff;
-                    padding: 20px;
-                    border-radius: 6px;
-                }
-                .header {
-                    text-align: center;
-                    padding-bottom: 20px;
-                }
-                .header img {
-                    height: 50px;
-                }
-                .footer {
-                    font-size: 12px;
-                    text-align: center;
-                    color: #888888;
-                    padding-top: 20px;
-                    border-top: 1px solid #dddddd;
-                }
-            </style>
-        </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <img src="assets/synapse_logo.png" alt="Synapse Logo">
-                <h2>Synapse</h2>
-            </div>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ subject }}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #42009f;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 6px;
+      }
+      .header {
+        text-align: center;
+        padding-bottom: 20px;
+      }
+      .header img {
+        height: 50px;
+      }
+      .footer {
+        font-size: 12px;
+        text-align: center;
+        color: #888888;
+        padding-top: 20px;
+        border-top: 1px solid #dddddd;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <img src="cid:synapse_logo" alt="Synapse Logo" />
+        <h2>Synapse</h2>
+      </div>
 
-            <p>Olá {{ user_name }},</p>
+      <h3>Segue o relatório gerado em {{ report_date }}:</h3>
 
-            <p>Segue o relatório gerado em {{ report_date }}:</p>
+      <h3>Métricas</h3>
+      <ul>
+        {{ metrics }}
+      </ul>
 
-            <h3>Resumo</h3>
-            <p>{{ report_summary }}</p>
-
-            <h3>Métricas</h3>
-            <ul>
-                {% for key, value in report_metrics.items() %}
-                <li><strong>{{ key }}:</strong> {{ value }}</li>
-                {% endfor %}
-            </ul>
-
-            <div class="footer">
-                <p>&copy; {{ current_year }} Synapse. Todos os direitos reservados.</p>
-                <p>Nosso GitHub: <a href="{{ github_url }}" target="_blank">{{ github_url }}</a></p>
-            </div>
-        </div>
-    </body>
+      <div class="footer">
+        <p>&copy; {{ current_year }} Synapse. Todos os direitos reservados.</p>
+        <p>
+          Nosso GitHub:
+          <a href="{{ github_url }}" target="_blank">{{ github_url }}</a>
+        </p>
+      </div>
+    </div>
+  </body>
 </html>

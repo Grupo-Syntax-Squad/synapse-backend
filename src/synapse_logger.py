@@ -25,10 +25,6 @@ class PrettyFormatter(logging.Formatter):
 
 
 def setup_logger() -> logging.Logger:
-    loki_handler = LokiHandler(
-        url=settings.LOKI_ENDPOINT, tags={"application": "synapse"}, version="1"
-    )
-
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(
         PrettyFormatter("%(asctime)s | %(module)s:%(lineno)d | %(message)s")
@@ -37,7 +33,11 @@ def setup_logger() -> logging.Logger:
     logger = logging.getLogger("synapse-logger")
     logger.setLevel(logging.DEBUG)
     logger.addHandler(console_handler)
-    logger.addHandler(loki_handler)
+    if settings.LOKI_ENDPOINT:
+        loki_handler = LokiHandler(
+            url=settings.LOKI_ENDPOINT, tags={"application": "synapse"}, version="1"
+        )
+        logger.addHandler(loki_handler)
 
     return logger
 

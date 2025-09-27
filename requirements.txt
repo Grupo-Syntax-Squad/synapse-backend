@@ -79,4 +79,5 @@ watchfiles==1.1.0
 websockets==15.0.1
 zope.event==6.0
 zope.interface==8.0.1
+jinja2
 pip

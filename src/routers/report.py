@@ -3,13 +3,13 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from src.auth.auth_utils import Auth, PermissionValidator
-from src.modules.nlp import ReportGenerator
 from src.modules.report import SendReportToSubscribers, GetReports, GetReportById
 from src.modules.report_scheduler import reset_scheduler
 from src.schemas.auth import CurrentUser
 from src.schemas.basic_response import BasicResponse
 from src.database.get_db import get_db
 from src.schemas.report import SendReport, GetReportResponse
+from src.modules.report import ReportWorkflow
 
 
 router = APIRouter(prefix="/reports", tags=["Report"])
@@ -19,8 +19,8 @@ router = APIRouter(prefix="/reports", tags=["Report"])
 async def send_report(
     request: SendReport,
     background_tasks: BackgroundTasks,
-    current_user: CurrentUser = Depends(Auth.get_current_user),  # type: ignore
-    session: Session = Depends(get_db),  # type: ignore
+    current_user: CurrentUser = Depends(Auth.get_current_user),
+    session: Session = Depends(get_db),
 ) -> BasicResponse[None]:
     PermissionValidator(current_user).execute()
     service = SendReportToSubscribers(session=session, request=request)
@@ -49,7 +49,7 @@ def get_report_by_id(
 
 
 @router.post("/generate")
-def generate_report_endpoint() -> BasicResponse[None]:
-    ReportGenerator().execute()
+async def generate_report_endpoint() -> BasicResponse[None]:
+    await ReportWorkflow().execute()
     reset_scheduler()
     return BasicResponse(message="Report generated sucessfully")

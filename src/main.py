@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     scheduler.shutdown()
 
 
-app = FastAPI(title="Synapse Backend")
+app = FastAPI(title="Synapse Backend", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

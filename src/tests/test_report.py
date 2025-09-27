@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from datetime import datetime, timedelta
 
 
-def test_get_reports(client: TestClient) -> None:
+def test_get_reports(client: TestClient, report_data: Any) -> None:
     response = client.get("/reports/")
     assert response.status_code == 200
     data = response.json()["data"]
@@ -11,7 +11,7 @@ def test_get_reports(client: TestClient) -> None:
     assert any(r["name"] == "Relatório 1" for r in data)
 
 
-def test_get_reports_with_date_filter(client: TestClient) -> None:
+def test_get_reports_with_date_filter(client: TestClient, report_data: Any) -> None:
     start = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
     response = client.get(f"/reports/?start_date={start}")
     assert response.status_code == 200
