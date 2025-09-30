@@ -5,55 +5,378 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ subject }}</title>
     <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #42009f;
+      * {
+        box-sizing: border-box;
         margin: 0;
         padding: 0;
       }
-      .container {
-        max-width: 600px;
-        margin: auto;
-        background-color: #ffffff;
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin: 0;
         padding: 20px;
-        border-radius: 6px;
+        line-height: 1.6;
       }
+
+      .email-wrapper {
+        max-width: 800px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
       .header {
+        background: linear-gradient(135deg, #42009f 0%, #6a1b9a 100%);
+        padding: 40px 30px;
         text-align: center;
-        padding-bottom: 20px;
+        color: white;
       }
+
       .header img {
-        height: 50px;
+        height: 60px;
+        margin-bottom: 15px;
+        filter: brightness(0) invert(1);
       }
-      .footer {
-        font-size: 12px;
+
+      .header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 10px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .header .subtitle {
+        font-size: 16px;
+        opacity: 0.9;
+        font-weight: 300;
+      }
+
+      .content {
+        padding: 40px 30px;
+      }
+
+      .report-info {
+        background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 35px;
+        border-left: 5px solid #42009f;
+      }
+
+      .report-info h2 {
+        color: #42009f;
+        font-size: 24px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+      }
+
+      .report-info .date {
+        font-size: 18px;
+        color: #666;
+        font-weight: 500;
+      }
+
+      .report-info .description {
+        color: #555;
+        font-size: 16px;
+        margin-top: 10px;
+        line-height: 1.5;
+      }
+
+      /* Seção de métricas */
+      .metrics-section {
+        margin-bottom: 40px;
+      }
+
+      .metrics-title {
+        font-size: 28px;
+        color: #333;
+        margin-bottom: 25px;
         text-align: center;
-        color: #888888;
-        padding-top: 20px;
-        border-top: 1px solid #dddddd;
+        font-weight: 700;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+
+      .metric-card {
+        background: #fff;
+        border: 2px solid #f0f0f0;
+        border-radius: 12px;
+        padding: 25px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .metric-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #42009f, #6a1b9a);
+      }
+
+      .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(66, 0, 159, 0.15);
+        border-color: #42009f;
+      }
+
+      .metric-card h3 {
+        color: #42009f;
+        font-size: 16px;
+        margin-bottom: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .metric-card .value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #333;
+        margin-bottom: 8px;
+      }
+
+      .metric-card .description {
+        font-size: 14px;
+        color: #666;
+        line-height: 1.4;
+      }
+
+      /* Indicadores de status */
+      .status-indicator {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .status-low-risk {
+        background: #e8f5e8;
+        color: #2e7d32;
+        border: 1px solid #c8e6c9;
+      }
+
+      .status-medium-risk {
+        background: #fff3e0;
+        color: #f57c00;
+        border: 1px solid #ffcc02;
+      }
+
+      .status-high-risk {
+        background: #ffebee;
+        color: #d32f2f;
+        border: 1px solid #ffcdd2;
+      }
+
+      /* Listas customizadas */
+      .custom-list {
+        list-style: none;
+        padding: 0;
+      }
+
+      .custom-list li {
+        background: #f8f9fa;
+        margin: 8px 0;
+        padding: 12px 16px;
+        border-radius: 8px;
+        border-left: 3px solid #42009f;
+        font-size: 14px;
+      }
+
+      .insights-section {
+        background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%);
+        border-radius: 12px;
+        padding: 25px;
+        margin: 30px 0;
+        border-left: 5px solid #ffa000;
+      }
+
+      .insights-section h3 {
+        color: #e65100;
+        font-size: 20px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+      }
+
+      .insights-section .insight-text {
+        color: #5d4037;
+        font-size: 16px;
+        line-height: 1.5;
+      }
+
+      .footer {
+        background: #f8f9fa;
+        padding: 30px;
+        text-align: center;
+        border-top: 3px solid #42009f;
+      }
+
+      .footer .company-info {
+        margin-bottom: 20px;
+      }
+
+      .footer .company-name {
+        font-size: 20px;
+        font-weight: 700;
+        color: #42009f;
+        margin-bottom: 5px;
+      }
+
+      .footer .copyright {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 15px;
+      }
+
+      .footer .links {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .footer .links a {
+        color: #42009f;
+        text-decoration: none;
+        font-weight: 500;
+        padding: 8px 16px;
+        border-radius: 6px;
+        background: #e3f2fd;
+        transition: all 0.3s ease;
+      }
+
+      .footer .links a:hover {
+        background: #42009f;
+        color: white;
+      }
+
+      @media (max-width: 600px) {
+        body {
+          padding: 10px;
+        }
+
+        .header {
+          padding: 30px 20px;
+        }
+
+        .header h1 {
+          font-size: 28px;
+        }
+
+        .content {
+          padding: 30px 20px;
+        }
+
+        .metrics-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .footer {
+          padding: 25px 20px;
+        }
+
+        .footer .links {
+          flex-direction: column;
+          align-items: center;
+        }
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .metric-card {
+        animation: fadeInUp 0.6s ease-out;
       }
     </style>
   </head>
   <body>
-    <div class="container">
+    <div class="email-wrapper">
       <div class="header">
-        <img src="cid:synapse_logo" alt="Synapse Logo" />
-        <h2>Synapse</h2>
+        <svg
+          version="1.1"
+          xmlns="http://www.w3.org/2000/svg"
+          width="90"
+          height="90"
+        >
+          <path
+            d="M0 0 C3.62011046 2.33296007 5.89022378 4.96794755 7.8125 8.8125 C11.39521776 8.9868959 14.97684602 9.09337658 18.5625 9.1875 C20.08617188 9.26291016 20.08617188 9.26291016 21.640625 9.33984375 C24.48265071 9.39593636 27.02612334 9.3824342 29.8125 8.8125 C32.51805851 6.0724675 32.51805851 6.0724675 33.8125 2.8125 C36.82494665 -0.42309085 40.16291867 -0.97791545 44.43359375 -1.30859375 C48.54428259 -1.09934686 51.59706139 0.27934407 54.8125 2.8125 C57.61972139 6.01510468 58.7284705 9.12825975 59.25 13.375 C58.59269761 18.53951881 57.1247195 21.62830191 53.25 25.125 C48.75978337 28.23361151 45.1836378 28.33469395 39.8125 27.8125 C36.10268555 26.16369358 33.47997351 23.86104115 30.8125 20.8125 C30.3175 19.3275 30.3175 19.3275 29.8125 17.8125 C22.5525 17.8125 15.2925 17.8125 7.8125 17.8125 C7.4825 19.1325 7.1525 20.4525 6.8125 21.8125 C8.76874714 24.27803635 10.68708752 26.38716405 12.91796875 28.58203125 C13.55358231 29.22242844 14.18919586 29.86282562 14.84407043 30.52262878 C16.19239038 31.87435392 17.547056 33.21977426 18.9074707 34.55932617 C20.99195065 36.61705395 23.04845732 38.70004465 25.10351562 40.78710938 C26.41506645 42.09535622 27.72816743 43.40205122 29.04296875 44.70703125 C29.65980026 45.33398392 30.27663177 45.96093658 30.91215515 46.60688782 C32.835902 48.5365125 32.835902 48.5365125 35.8125 50.8125 C37.88268805 50.54240426 37.88268805 50.54240426 39.8125 49.8125 C44.55224481 49.28681921 47.89493804 49.33672713 52.1875 51.5625 C56.83154037 55.54310603 58.45991158 58.31603894 58.93359375 64.43359375 C58.72434686 68.54428259 57.34565593 71.59706139 54.8125 74.8125 C51.60989532 77.61972139 48.49674025 78.7284705 44.25 79.25 C39.08548119 78.59269761 35.99669809 77.1247195 32.5 73.25 C30.8125 70.8125 30.8125 70.8125 29.8125 68.8125 C18.9225 68.3175 18.9225 68.3175 7.8125 67.8125 C7.8125 71.4425 7.8125 75.0725 7.8125 78.8125 C-1.7575 78.8125 -11.3275 78.8125 -21.1875 78.8125 C-21.1875 69.2425 -21.1875 59.6725 -21.1875 49.8125 C-11.6175 49.8125 -2.0475 49.8125 7.8125 49.8125 C7.8125 53.4425 7.8125 57.0725 7.8125 60.8125 C15.0725 60.4825 22.3325 60.1525 29.8125 59.8125 C30.1425 58.4925 30.4725 57.1725 30.8125 55.8125 C28.85625286 53.34696365 26.93791248 51.23783595 24.70703125 49.04296875 C24.07141769 48.40257156 23.43580414 47.76217438 22.78092957 47.10237122 C21.43260962 45.75064608 20.077944 44.40522574 18.7175293 43.06567383 C16.63304935 41.00794605 14.57654268 38.92495535 12.52148438 36.83789062 C11.20993355 35.52964378 9.89683257 34.22294878 8.58203125 32.91796875 C7.96519974 32.29101608 7.34836823 31.66406342 6.71284485 31.01811218 C4.789098 29.0884875 4.789098 29.0884875 1.8125 26.8125 C-0.25768805 27.08259574 -0.25768805 27.08259574 -2.1875 27.8125 C-6.92724481 28.33818079 -10.26993804 28.28827287 -14.5625 26.0625 C-19.20654037 22.08189397 -20.83491158 19.30896106 -21.30859375 13.19140625 C-21.09934686 9.08071741 -19.72065593 6.02793861 -17.1875 2.8125 C-11.9610671 -1.76869427 -6.41001514 -2.38804486 0 0 Z M-12.625 7.375 C-14.79146028 10.75467804 -14.75038002 12.87233987 -14.1875 16.8125 C-12.25767583 19.52854883 -10.84549225 20.55942606 -7.75 21.75 C-4.3403946 21.83316111 -2.84967729 20.89907139 -0.1875 18.8125 C1.55943992 16.43030919 1.83526273 15.26775467 1.6875 12.3125 C0.57557812 9.13558035 -0.43439163 7.76865595 -3.1875 5.8125 C-7.12766013 5.24961998 -9.24532196 5.20853972 -12.625 7.375 Z M38.4375 7.5 C36.59328193 10.12446417 35.89080977 11.60179947 35.8125 14.8125 C37.072253 17.66351994 38.17132201 19.3423028 40.6875 21.1875 C43.51091386 22.01791584 45.03636138 21.78414852 47.8125 20.8125 C50.24945474 19.29231752 50.24945474 19.29231752 51.8125 16.8125 C52.37538002 12.87233987 52.41646028 10.75467804 50.25 7.375 C46.13751567 4.73879209 42.4452444 4.65239214 38.4375 7.5 Z M-14.1875 55.8125 C-14.1875 61.0925 -14.1875 66.3725 -14.1875 71.8125 C-8.9075 71.8125 -3.6275 71.8125 1.8125 71.8125 C1.8125 66.5325 1.8125 61.2525 1.8125 55.8125 C-3.4675 55.8125 -8.7475 55.8125 -14.1875 55.8125 Z M37.8125 58.8125 C36.06556008 61.19469081 35.78973727 62.35724533 35.9375 65.3125 C37.04942188 68.48941965 38.05939163 69.85634405 40.8125 71.8125 C44.75266013 72.37538002 46.87032196 72.41646028 50.25 70.25 C52.41646028 66.87032196 52.37538002 64.75266013 51.8125 60.8125 C49.88267583 58.09645117 48.47049225 57.06557394 45.375 55.875 C41.9653946 55.79183889 40.47467729 56.72592861 37.8125 58.8125 Z "
+            fill="#6A00FF"
+            transform="translate(26.1875,6.1875)"
+          />
+        </svg>
+        <h1>Synapse Analytics</h1>
+        <div class="subtitle">Sistema de Gestão e Monitoramento de Estoque</div>
       </div>
 
-      <h3>Segue o relatório gerado em {{ report_date }}:</h3>
+      <div class="content">
+        <div class="report-info">
+          <h2>📊 {{ subject }}</h2>
+          <div class="date">📅 Gerado em {{ report_date }}</div>
+          <div class="description">
+            Este relatório apresenta uma análise completa do seu estoque,
+            incluindo métricas de consumo, riscos de desabastecimento,
+            frequência de compras e recomendações estratégicas para otimização
+            da gestão de inventário.
+          </div>
+        </div>
 
-      <h3>Métricas</h3>
-      <ul>
-        {{ metrics }}
-      </ul>
+        <!-- Seção de Métricas -->
+        <div class="metrics-section">
+          <h2 class="metrics-title">📈 Principais Métricas</h2>
+          <div class="metrics-grid">{{ metrics }}</div>
+        </div>
 
+        <!-- Insights e Recomendações -->
+        <div class="insights-section">
+          <h3>💡 Insights e Recomendações</h3>
+          <div class="insight-text">
+            <strong>Dica:</strong> Monitore regularmente os itens com baixo
+            estoque e mantenha um aging médio adequado para evitar perdas.
+            Considere automatizar pedidos para SKUs críticos baseado no
+            histórico de consumo apresentado.
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
       <div class="footer">
-        <p>&copy; {{ current_year }} Synapse. Todos os direitos reservados.</p>
-        <p>
-          Nosso GitHub:
-          <a href="{{ github_url }}" target="_blank">{{ github_url }}</a>
-        </p>
+        <div class="company-info">
+          <div class="company-name">Synapse Analytics</div>
+          <div class="copyright">
+            &copy; {{ current_year }} Synapse. Todos os direitos reservados.
+          </div>
+        </div>
+
+        <div class="links">
+          <a href="{{ github_url }}" target="_blank">🔗 GitHub</a>
+          <a href="#" target="_blank">📧 Suporte</a>
+          <a href="#" target="_blank">📚 Documentação</a>
+        </div>
       </div>
     </div>
   </body>

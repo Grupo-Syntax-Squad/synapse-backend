@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.settings import settings
-from src.database.get_db import get_db
-from src.database.models import Test
+from src.database.get_db import get_db, engine
+from src.database.models import Base, Test
 from src.modules.root import GetRoot
 from src.schemas.basic_response import BasicResponse
 from src.routers import auth, user, report
@@ -18,9 +18,12 @@ from src.modules.report_scheduler import (
 )
 
 origins = [
-    "http://localhost:5173/",
-    "http://127.0.0.1:5173/",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
+
+
+Base.metadata.create_all(bind=engine)
 
 
 @asynccontextmanager
@@ -36,7 +39,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=[""],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 app.include_router(auth.router)

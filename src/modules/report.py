@@ -69,15 +69,6 @@ class SendReportToSubscribers:
                     recipients=[user.email],
                     body=report.content,
                     subtype=MessageType.html,
-                    attachments=[
-                        {
-                            "file": "./src/templates/email/assets/synapse_logo.png",
-                            "cid": "synapse_logo",
-                        }
-                    ],
-                )
-                report.content = report.content.replace(
-                    "assets/synapse_logo.png", "cid:synapse_logo.png"
                 )
                 try:
                     await fm.send_message(message)
@@ -204,7 +195,6 @@ class ReportGenerator:
     def _get_necessary_processing_data(self) -> dict[str, Any]:
         try:
             queries = {
-                # TODO: SOMA BRUTA QUE SE FODA
                 "estoque_consumido": """
                     SELECT COALESCE(SUM(es_totalestoque),0) AS total
                     FROM estoque
@@ -221,8 +211,8 @@ class ReportGenerator:
                     ORDER BY mes;
                 """,
                 "aging": """
-                    SELECT AVG(FLOOR(EXTRACT(epoch FROM (current_date - data)) / (60*60*24*7))) AS idade_media
-                    FROM estoque
+                    SELECT AVG(FLOOR(EXTRACT(EPOCH FROM (current_date::timestamp - data)) / (60*60*24*7))) AS idade_media
+                    FROM estoque;
                 """,
                 "clientes_sku1": """
                     SELECT COUNT(DISTINCT cod_cliente) AS clientes
@@ -333,7 +323,7 @@ class ReportGenerator:
             frequencies.append(
                 f"<li style='list-style: none'><strong>{date.strftime('%m/%y')}:</strong> {value}</li>"  # type: ignore[union-attr]
             )
-        return f"{'\n'.join(frequencies)}"
+        return "\n".join(frequencies)
 
     def _save_report(self, content: str) -> Report:
         try:
