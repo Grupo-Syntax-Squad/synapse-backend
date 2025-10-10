@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     MAIL_SSL_TLS: bool = False
     HOST: str
     PORT: int
+    EMAIL_TEMPLATE_PATH: str
+    GITHUB_URL: str
+    SCHEDULED_REPORT_GENERATION_MINUTES: int
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

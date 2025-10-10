@@ -1,14 +1,15 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
-from fastapi.params import Depends
 from sqlalchemy.orm import Session
 from typing import Optional
 
 from src.auth.auth_utils import Auth, PermissionValidator
 from src.modules.report import SendReportToSubscribers, GetReports, GetReportById
+from src.modules.report_scheduler import reset_scheduler
 from src.schemas.auth import CurrentUser
 from src.schemas.basic_response import BasicResponse
 from src.database.get_db import get_db
 from src.schemas.report import SendReport, GetReportResponse
+from src.modules.report import ReportWorkflow
 
 
 router = APIRouter(prefix="/reports", tags=["Report"])
@@ -18,16 +19,15 @@ router = APIRouter(prefix="/reports", tags=["Report"])
 async def send_report(
     request: SendReport,
     background_tasks: BackgroundTasks,
-    current_user: CurrentUser = Depends(Auth.get_current_user),  # type: ignore
-    session: Session = Depends(get_db),  # type: ignore
+    current_user: CurrentUser = Depends(Auth.get_current_user),
+    session: Session = Depends(get_db),
 ) -> BasicResponse[None]:
     PermissionValidator(current_user).execute()
-    service = SendReportToSubscribers(
-        session=session,
-        request=request
-    )
+    service = SendReportToSubscribers(session=session, request=request)
     background_tasks.add_task(service.execute)
-    return BasicResponse(message="O envio do relatório está sendo processado em background.")
+    return BasicResponse(
+        message="O envio do relatório está sendo processado em background."
+    )
 
 
 @router.get("/")
@@ -46,3 +46,10 @@ def get_report_by_id(
     session: Session = Depends(get_db),
 ) -> BasicResponse[GetReportResponse | None]:
     return GetReportById(session, report_id).execute()
+
+
+@router.post("/generate")
+async def generate_report_endpoint() -> BasicResponse[None]:
+    await ReportWorkflow().execute()
+    reset_scheduler()
+    return BasicResponse(message="Report generated sucessfully")

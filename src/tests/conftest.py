@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import pytest
 from typing import Generator
 from fastapi.testclient import TestClient
@@ -7,8 +8,27 @@ from unittest.mock import patch
 
 from src.main import app
 from src.settings import settings
-from src.database.models import Base
+from src.database.models import Base, Report
 from src.database.get_db import get_db
+
+
+@pytest.fixture
+def report_data(session: Session) -> list[Report]:
+    reports = [
+        Report(
+            name="Relatório 1",
+            created_at=datetime.now() - timedelta(days=2),
+            content="Conteúdo do relatório 1",
+        ),
+        Report(
+            name="Relatório 2",
+            created_at=datetime.now() - timedelta(days=1),
+            content="Conteúdo do relatório 2",
+        ),
+    ]
+    session.add_all(reports)
+    session.commit()
+    return reports
 
 
 @pytest.fixture(autouse=True)
