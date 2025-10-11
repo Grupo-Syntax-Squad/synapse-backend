@@ -16,6 +16,7 @@ from src.modules.report_scheduler import (
     scheduler,
     start_scheduler,
 )
+from src.routers import websocket
 
 origins = [
     "http://localhost:5173",
@@ -45,6 +46,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(report.router)
+app.include_router(websocket.router)
 
 
 @app.get("/")

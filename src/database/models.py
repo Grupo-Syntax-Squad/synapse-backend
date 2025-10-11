@@ -37,6 +37,18 @@ class User(Base):  # type: ignore[valid-type, misc]
     last_update: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     last_access: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
+class Notification(Base):  # type: ignore[valid-type, misc]
+    __tablename__ = "notification"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)    
+    message: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    visualized: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
+    visualizedAt: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    visualizedBy: Mapped[int | None] = mapped_column(Integer, ForeignKey("user.id"), nullable=True)
+    emails: Mapped[str | None] = mapped_column(String, nullable=True)
+    report_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("report.id"), nullable=True)
+
 
 class Report(Base):  # type: ignore[valid-type, misc]
     __tablename__ = "report"
