@@ -1,7 +1,7 @@
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import-untyped]
 from apscheduler.triggers.interval import IntervalTrigger  # type: ignore[import-untyped]
 from apscheduler.job import Job  # type: ignore[import-untyped]
-from datetime import datetime, timezone
+from datetime import datetime
 
 from src.logger_instance import logger
 from src.modules.report import ReportWorkflow
@@ -12,7 +12,7 @@ job: Job | None = None  # type: ignore[no-any-unimported]
 
 
 async def generate_report_job() -> None:
-    logger.info(f"Scheduled report generation started at {datetime.now(timezone.utc)}")
+    logger.info(f"Scheduled report generation started at {datetime.now()}")
     await ReportWorkflow().execute()
 
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from fastapi import HTTPException, status
 from fastapi_mail import (
     FastMail,
@@ -175,7 +175,7 @@ class ReportGenerator:
     def __init__(self, session: Session) -> None:
         self._session = session
         self._log = logger
-        self._now = datetime.now(timezone.utc)
+        self._now = datetime.now()
         self._report_name = f"Relatório {self._now.strftime('%d/%m/%Y %H:%M')}"
 
     def execute(self) -> Report:
