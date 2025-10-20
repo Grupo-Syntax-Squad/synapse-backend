@@ -70,17 +70,18 @@ class IntentRecognizer:
 
 
 # ----------------- Exemplo -----------------
-# if __name__ == "__main__":
-#     analyzer = IntentRecognizer()
-#     frases = [
-#         "João e Maria compraram frutas no mercado.",
-#         "O gerente da filial e a diretora aprovaram o novo projeto.",
-#         "Carlos estudou matemática ontem.",
-#         "A empresa contratou novos funcionários.",
-#         "O cachorro derrubou o vaso da mesa."
-#     ]
+if __name__ == "__main__":
+    analyzer = IntentRecognizer()
+    frases = [
+        "João e Maria compraram frutas no mercado.",
+        "O gerente da filial e a diretora aprovaram o novo projeto.",
+        "Carlos estudou matemática ontem.",
+        "A empresa contratou novos funcionários.",
+        "O cachorro derrubou o vaso da mesa.",
+        "Eu gostaria de extrair todos os dados sobre o SKUs vendidos no último trimestre.",
+    ]
 
-#     for f in frases:
-#         print(f"\nFrase: {f}")
-#         for r in analyzer.analyze(f):
-#             print(r)
+    for f in frases:
+        print(f"\nFrase: {f}")
+        for r in analyzer.analyze(f):
+            print(r)
