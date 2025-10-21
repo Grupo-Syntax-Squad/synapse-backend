@@ -1,25 +1,30 @@
+from typing import Any
 import spacy
+from spacy.tokens import Span
+
 
 class IntentRecognizer:
-    def __init__(self):
+    def __init__(self) -> None:
         self.nlp = spacy.load("pt_core_news_sm")
 
-    def analyze(self, text: str):
+    def analyze(self, text: str) -> list[dict[str, Any]]:
         doc = self.nlp(text)
         results = []
         for sent in doc.sents:
             subject = self._get_subject(sent)
             verb = self._get_main_verb(sent)
             complement = self._get_complement(sent, verb)
-            results.append({
-                "sentence": sent.text,
-                "subject": subject,
-                "verb": verb,
-                "complement": complement
-            })
+            results.append(
+                {
+                    "sentence": sent.text,
+                    "subject": subject,
+                    "verb": verb,
+                    "complement": complement,
+                }
+            )
         return results
 
-    def _get_subject(self, sent):
+    def _get_subject(self, sent: Span) -> dict[str, str | int] | None:
         subj_tokens = [tok for tok in sent if tok.dep_.startswith("nsubj")]
         if not subj_tokens:
             return None
@@ -34,8 +39,11 @@ class IntentRecognizer:
         text = sent.doc[start:end].text
         return {"text": text, "start": start, "end": end}
 
-    def _get_main_verb(self, sent):
-        root = next((tok for tok in sent if tok.dep_ == "ROOT" and tok.pos_ in {"VERB", "AUX"}), None)
+    def _get_main_verb(self, sent: Span) -> dict[str, Any] | None:
+        root = next(
+            (tok for tok in sent if tok.dep_ == "ROOT" and tok.pos_ in {"VERB", "AUX"}),
+            None,
+        )
         if not root:
             return None
 
@@ -47,9 +55,17 @@ class IntentRecognizer:
         indices = sorted(t.i for t in tokens)
         start, end = indices[0], indices[-1] + 1
         text = sent.doc[start:end].text
-        return {"text": text, "lemma": root.lemma_, "start": start, "end": end, "token": root}
+        return {
+            "text": text,
+            "lemma": root.lemma_,
+            "start": start,
+            "end": end,
+            "token": root,
+        }
 
-    def _get_complement(self, sent, verb_info):
+    def _get_complement(
+        self, sent: Span, verb_info: dict[str, Any] | None
+    ) -> dict[str, Any] | None:
         if not verb_info:
             return None
 

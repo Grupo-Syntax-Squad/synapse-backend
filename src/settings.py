@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     EMAIL_TEMPLATE_PATH: str
     GITHUB_URL: str
     SCHEDULED_REPORT_GENERATION_MINUTES: int
+    OPEN_ROUTER_API_KEY: str
+    OPEN_ROUTER_MODEL: str
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
