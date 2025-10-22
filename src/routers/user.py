@@ -15,11 +15,11 @@ router = APIRouter(prefix="/users", tags=["User"])
 
 
 @router.post("/register")
-def register_user(
+async def register_user(
     request: PostUser,
     session: Session = Depends(get_db),  # type: ignore
 ) -> BasicResponse[None]:
-    return CreateUser(session, request).execute()
+    return await CreateUser(session, request).execute()
 
 
 @router.get("/me")

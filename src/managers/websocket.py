@@ -1,5 +1,5 @@
-from src.modules.websocket import WebSocketManager
+from src.modules.websocket import ChatWebSocketManager, NotificationWebSocketManager
 
 
-chat_manager = WebSocketManager()
-notifications_manager = WebSocketManager()
+chat_manager = ChatWebSocketManager()
+notifications_manager = NotificationWebSocketManager()
