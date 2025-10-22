@@ -3,7 +3,7 @@ from fastapi import status
 
 
 class TestLogin:    
-    def test_login(self, client: TestClient):
+    def test_login(self, client: TestClient) -> None:
         payload = {
             "username": "TestUser1",
             "email": "testemail@gmail.com",
