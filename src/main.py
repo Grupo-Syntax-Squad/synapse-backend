@@ -11,7 +11,7 @@ from src.database.get_db import get_db, engine
 from src.database.models import Base, Test
 from src.modules.root import GetRoot
 from src.schemas.basic_response import BasicResponse
-from src.routers import auth, user, report
+from src.routers import auth, user, report, chat
 from src.modules.report_scheduler import (
     scheduler,
     start_scheduler,
@@ -45,6 +45,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(report.router)
+app.include_router(chat.router)
 
 
 @app.get("/")
