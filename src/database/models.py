@@ -1,3 +1,4 @@
+from typing import Any
 from sqlalchemy.orm import Mapped, mapped_column, declarative_base, relationship
 from sqlalchemy import (
     JSON,
@@ -47,8 +48,8 @@ class Notification(Base):  # type: ignore[valid-type, misc]
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     type: Mapped[NotificationType] = mapped_column(SQLEnum(NotificationType), nullable=False)
-    message: Mapped[str] = mapped_column(String) 
-    details: Mapped[dict] = mapped_column(JSON, nullable=False)
+    message: Mapped[str] = mapped_column(String, nullable=False)  
+    details: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     visualized: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
     visualizedAt: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

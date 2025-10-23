@@ -7,6 +7,7 @@ from src.schemas.auth import CurrentUser
 from src.logger_instance import logger
 from src.schemas.basic_response import BasicResponse
 
+
 class VisualizeNotification:
     def __init__(self, session: Session, notification_id: int, current_user: CurrentUser):
         self._session = session

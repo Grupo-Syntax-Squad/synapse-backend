@@ -79,7 +79,7 @@ class SendReportToSubscribers:
             logger.info(f"E-mails enviados: {success_count}, falhas: {len(failed_users)}") 
             if failed_users:           
                 logger.debug(f"Detalhes das falhas: {failed_users}")
-                notification = await self.create_email_failure_notification([{"email": user.email} for user in final_failed_users])
+                notification = await self.create_email_failure_notification(final_failed_users)
                 if notification:
                     await notifications_manager.send_notification(notification)
             else:
@@ -108,7 +108,7 @@ class SendReportToSubscribers:
             self.session.commit()
             return None
         except Exception as e:
-            await logger.error(f"Erro ao enviar e-mail para {user.email}: {e}")
+            logger.error(f"Erro ao enviar e-mail para {user.email}: {e}")
             await notifications_manager.send_global_message(
                 f"Erro ao enviar e-mail para {user.email}: {e}"
             )
@@ -133,7 +133,7 @@ class SendReportToSubscribers:
     
     async def create_email_failure_notification(self, failed_users: list[User]) -> Notification | None:
         if not failed_users:
-            return
+            return None
 
         failed_emails = [user["email"] for user in failed_users]
 
@@ -147,6 +147,7 @@ class SendReportToSubscribers:
         self.session.commit()
         self.session.refresh(notification)   
         return notification
+
 
 class GetReports:
     def __init__(self, session: Session, filters: dict[str, Any]):

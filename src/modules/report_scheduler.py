@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from src.logger_instance import logger
 from src.modules.report import ReportWorkflow
 from src.settings import settings
-from src.managers.websocket import notifications_manager
 
 scheduler = AsyncIOScheduler()
 job: Job | None = None  # type: ignore[no-any-unimported]
