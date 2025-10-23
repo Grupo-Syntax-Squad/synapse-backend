@@ -84,7 +84,6 @@ class TestUser:
             "password": "password123",
         }
         response = client.post("/users/register", json=payload)
-        # handled by Pydantic EmailStr
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     def test_list_users_returns_only_active(self, session: Session, client: TestClient) -> None:
@@ -104,7 +103,6 @@ class TestUser:
             "password": "password123",
         }
 
-        # create users via API
         resp = client.post("/users/register", json=payload1)
         assert resp.status_code == status.HTTP_200_OK
         resp = client.post("/users/register", json=payload2)
@@ -112,7 +110,6 @@ class TestUser:
         resp = client.post("/users/register", json=payload_inactive)
         assert resp.status_code == status.HTTP_200_OK
 
-        # mark the third user as inactive directly in the DB
         user = session.execute(
             select(User).where(User.username == payload_inactive["username"])
         ).scalar_one_or_none()
@@ -120,7 +117,6 @@ class TestUser:
         user.is_active = False
         session.commit()
 
-        # call the listing endpoint
         response = client.get("/users")
         assert response.status_code == status.HTTP_200_OK
 
@@ -131,9 +127,7 @@ class TestUser:
         assert payload2["username"] in usernames
         assert payload_inactive["username"] not in usernames
 
-# update user tests
     def test_update_user_field_success(self, session: Session, client: TestClient) -> None:
-        # create target user and admin user
         target = {"username": "TargetUser", "email": "target@example.com", "password": "password123"}
         admin = {"username": "AdminUser", "email": "admin@example.com", "password": "adminpass123"}
 
@@ -142,12 +136,10 @@ class TestUser:
         r = client.post("/users/register", json=admin)
         assert r.status_code == status.HTTP_200_OK
 
-        # promote admin user in DB
         admin_obj = session.execute(select(User).where(User.email == admin["email"])).scalar_one()
         admin_obj.is_admin = True
         session.commit()
 
-        # login as admin to get token
         login = client.post("/auth/login", json={"email": admin["email"], "password": admin["password"]})
         print(f"Login response: {login}")
         print(f"LOgin Cookies: {login.cookies}")

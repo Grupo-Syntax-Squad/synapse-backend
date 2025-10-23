@@ -48,13 +48,6 @@ def client(session: Session) -> Generator[TestClient, None, None]:
             yield c
     app.dependency_overrides.clear()
 
-# @pytest.fixture()
-# def client(session: Session) -> Generator[TestClient, None, None]:
-#     app.dependency_overrides[get_db] = lambda: session
-#     with TestClient(app) as c:
-#         yield c
-#     app.dependency_overrides.clear()
-
 
 @pytest.fixture(scope="session")
 def engine() -> Engine:
