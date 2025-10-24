@@ -1,12 +1,15 @@
+from datetime import datetime
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from datetime import datetime, timezone
 
+from src.enums.notification_type import NotificationType
 from src.logger_instance import logger
 from src.auth.auth_utils import Auth
-from src.database.models import User
+from src.database.models import Notification, User
 from src.schemas.basic_response import BasicResponse
+from src.managers.websocket import notifications_manager
 from src.schemas.user import PostUser, UserResponse, UpdateUserRequest
 
 
@@ -16,14 +19,17 @@ class CreateUser:
         self._request = request
         self._log = logger
 
-    def execute(self) -> BasicResponse[None]:
+    async def execute(self) -> BasicResponse[None]:
         try:
             self._log.info("Creating new user")
             with self._session as session:
                 self._validate()
-                self._create_user(session)
+                user = self._create_user(session)
                 session.commit()
                 self._log.info("User created successfully")
+                notification = await self._create_new_user_notification(user)
+                if notification:
+                    await notifications_manager.send_notification(notification)
                 return BasicResponse(message="OK")
         except HTTPException:
             raise
@@ -78,6 +84,18 @@ class CreateUser:
         session.flush()
         session.refresh(user)
         return user
+    
+    async def _create_new_user_notification(self, user: User) -> Notification | None:
+        notification = Notification(
+            type=NotificationType.NEW_USER,
+            message=f"Novo usuário cadastrado: {user.username}",
+            details={"user_id": user.id, "timestamp": datetime.utcnow().isoformat()},
+        )
+
+        self._session.add(notification)
+        self._session.commit()
+        self._session.refresh(notification)   
+        return notification
 
 
 class ListUsers:

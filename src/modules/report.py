@@ -10,16 +10,18 @@ from pydantic import SecretStr
 from sqlalchemy.orm import Session
 
 from src.database.get_db import get_db
-from src.database.models import DeliveredTo, Report, User
+from src.database.models import DeliveredTo, Notification, Report, User
+from src.enums.notification_type import NotificationType
 from src.modules.email_builder import EmailBuilder
 from src.settings import settings
 from src.schemas.report import SendReport
 from src.logger_instance import logger
 
-from typing import Any
+from typing import Any, List
 from sqlalchemy import text
 from src.schemas.report import GetReportResponse
 from src.schemas.basic_response import BasicResponse
+from src.managers.websocket import notifications_manager
 
 
 class SendReportToSubscribers:
@@ -36,65 +38,115 @@ class SendReportToSubscribers:
             MAIL_SSL_TLS=settings.MAIL_SSL_TLS,
             USE_CREDENTIALS=True,
         )
-
+        self.fm = FastMail(self.conf)
+        
     async def execute(self) -> None:
         logger.info("Iniciando processo de envio de e-mails.")
+        await notifications_manager.send_global_message("Iniciando processo de envio de e-mails.")
+
         try:
-            report = (
-                self.session.query(Report)
-                .filter(Report.id == self.request.report_id)
-                .first()
-            )
+            report = self.session.query(Report).filter(Report.id == self.request.report_id).first()
             if not report:
-                logger.error(
-                    f"Relatório com id {self.request.report_id} não encontrado."
-                )
+                logger.error(f"Relatório com id {self.request.report_id} não encontrado.")
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Relatório com id {self.request.report_id} não encontrado.",
                 )
 
-            users = self.session.query(User).filter(User.receive_email.is_(True)).all()
+            users: List[User] = self.session.query(User).filter(User.receive_email.is_(True)).all()
             if not users:
+                await notifications_manager.send_global_message("Nenhum usuário para enviar e-mail.")
                 logger.warning("Nenhum usuário para enviar e-mail.")
                 return
 
-            fm = FastMail(self.conf)
             success_count = 0
             failed_users = []
 
             for user in users:
-                message = MessageSchema(
-                    subject=self.request.subject,
-                    recipients=[user.email],
-                    body=report.content,
-                    subtype=MessageType.html,
-                )
-                try:
-                    await fm.send_message(message)
-
-                    record = DeliveredTo(report_id=report.id, user_id=user.id)
-                    self.session.add(record)
-                    self.session.commit()
+                failed_user = await self.send_email_to_user(user, report)
+                if failed_user:
+                    failed_users.append(failed_user)
+                else:
                     success_count += 1
 
-                except Exception as e:
-                    logger.error(f"Erro ao enviar e-mail para {user.email}: {e}")
-                    self.session.rollback()
-                    failed_users.append({"email": user.email, "error": str(e)})
+            if failed_users:
+                await notifications_manager.send_global_message(
+                    f"Tentando reenviar e-mails para {len(failed_users)} usuários com falha."
+                )
+                final_failed_users = await self.retry_failed_emails(failed_users, report)
+                success_count += len(users) - len(final_failed_users) - success_count
 
-            # TODO: Usuarios que tiveram falhas no envio devem entrar na fila de reenvio de email
-            logger.info(
-                f"E-mails enviados: {success_count}, falhas: {len(failed_users)}"
-            )
-            logger.debug(f"Detalhes das falhas: {failed_users}")
-
+            logger.info(f"E-mails enviados: {success_count}, falhas: {len(failed_users)}") 
+            if failed_users:           
+                logger.debug(f"Detalhes das falhas: {failed_users}")
+                notification = await self.create_email_failure_notification(final_failed_users)
+                if notification:
+                    await notifications_manager.send_notification(notification)
+            else:
+                await notifications_manager.send_global_message("Todos os e-mails foram enviados com sucesso.")
         except Exception as e:
             logger.error(f"Erro ao processar envio de e-mails: {e}")
+            await notifications_manager.send_global_message(
+                f"Erro ao processar envio de e-mails: {e}"
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Erro ao processar envio de e-mails: {e}",
             )
+        
+    async def send_email_to_user(self, user: User, report: Report) -> User | None:
+        message = MessageSchema(
+            subject=report.name,
+            recipients=[user.email],
+            body=report.content,
+            subtype=MessageType.html,
+        )
+        try:
+            await self.fm.send_message(message)
+            record = DeliveredTo(report_id=report.id, user_id=user.id)
+            self.session.add(record)
+            self.session.commit()
+            return None
+        except Exception as e:
+            logger.error(f"Erro ao enviar e-mail para {user.email}: {e}")
+            await notifications_manager.send_global_message(
+                f"Erro ao enviar e-mail para {user.email}: {e}"
+            )
+            self.session.rollback()
+            return user
+        
+    async def retry_failed_emails(self, failed_users: List[User], report: Report, max_retries: int = 3) -> list[User]:
+        final_failures: List[User] = failed_users.copy()
+        for _ in range(max_retries):
+            if not final_failures:
+                break
+            current_failures = final_failures.copy()
+            final_failures = []
+
+            for user_fail in current_failures:
+                if not user_fail:
+                    continue
+                result = await self.send_email_to_user(user_fail, report)
+                if result:
+                    final_failures.append(result)
+        return final_failures
+    
+    async def create_email_failure_notification(self, failed_users: list[User]) -> Notification | None:
+        if not failed_users:
+            return None
+
+        failed_emails = [user["email"] for user in failed_users]
+
+        notification = Notification(
+            type=NotificationType.FAILED_EMAIL,
+            message=f"Falha no envio de e-mails para {len(failed_emails)} usuários",
+            details={"failed_emails": failed_emails, "timestamp": datetime.utcnow().isoformat()},
+        )
+
+        self.session.add(notification)
+        self.session.commit()
+        self.session.refresh(notification)   
+        return notification
 
 
 class GetReports:

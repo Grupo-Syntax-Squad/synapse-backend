@@ -1,7 +1,8 @@
+AIOSMTPLIB==3.0.2
+APScheduler==3.11.0
 alembic==1.16.5
 annotated-types==0.7.0
 anyio==4.10.0
-APScheduler==3.11.0
 bcrypt==4.0.1
 certifi==2025.8.3
 charset-normalizer==3.4.3
@@ -35,8 +36,8 @@ packaging==25.0
 passlib==1.7.4
 pathspec==0.12.1
 pluggy==1.6.0
+prometheus-client==0.22.1
 prometheus-fastapi-instrumentator==7.1.0
-prometheus_client==0.22.1
 psycopg2-binary==2.9.10
 pyasn1==0.6.1
 pydantic==2.11.7
@@ -50,6 +51,7 @@ python-dotenv==1.1.1
 python-jose==3.5.0
 python-logging-loki==0.3.1
 python-multipart==0.0.20
+Pygments==2.19.2
 PyYAML==6.0.2
 requests==2.32.5
 rfc3339==6.2
@@ -70,8 +72,9 @@ types-passlib==1.7.7.20250602
 types-pyasn1==0.6.0.20250516
 types-python-jose==3.5.0.20250531
 typing-inspection==0.4.1
-typing_extensions==4.15.0
+typing-extensions==4.15.0
 tzlocal==5.3.1
+tzdata==2025.2
 urllib3==2.5.0
 uvicorn==0.35.0
 uvloop==0.21.0
@@ -79,5 +82,3 @@ watchfiles==1.1.0
 websockets==15.0.1
 zope.event==6.0
 zope.interface==8.0.1
-jinja2
-pip
