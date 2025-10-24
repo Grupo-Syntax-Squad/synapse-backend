@@ -29,10 +29,11 @@ Base.metadata.create_all(bind=engine)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    scheduler.start()
-    start_scheduler()
+    if not settings.TESTING:
+        start_scheduler()
     yield
-    scheduler.shutdown()
+    if not settings.TESTING:
+        scheduler.shutdown()
 
 
 app = FastAPI(title="Synapse Backend", lifespan=lifespan)

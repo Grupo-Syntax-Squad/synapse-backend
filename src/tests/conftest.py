@@ -6,7 +6,7 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from unittest.mock import patch
 
-from src.main import app
+from src.main import app, scheduler
 from src.settings import settings
 from src.database.models import Base, Report
 from src.database.get_db import get_db
@@ -67,3 +67,8 @@ def session(engine, tables) -> Generator[Session, None, None]:  # type: ignore[n
     session.close()
     transaction.rollback()
     connection.close()
+
+@pytest.fixture(autouse=True)
+def disable_scheduler():
+    with patch.object(scheduler, "start", lambda *a, **kw: None):
+        yield
