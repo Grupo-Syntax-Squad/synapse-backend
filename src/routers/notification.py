@@ -15,8 +15,8 @@ router = APIRouter(prefix="/notifications", tags=["Notification"])
 @router.patch("/{notification_id}/visualize")
 def visualize_notification(
     notification_id: int,
-    current_user: CurrentUser = Depends(Auth.get_current_user), # type: ignore
-    session: Session = Depends(get_db), # type: ignore
+    current_user: CurrentUser = Depends(Auth.get_current_user),  # type: ignore
+    session: Session = Depends(get_db),  # type: ignore
 ) -> BasicResponse[None]:
     PermissionValidator(current_user).execute()
     return VisualizeNotification(

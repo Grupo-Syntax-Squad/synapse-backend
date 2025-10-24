@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    TESTING: bool = Field(default=False, env="TESTING")
+    TESTING: bool = Field(default=False, env=["TESTING"])   # type: ignore
     DATABASE_URL: str
     SECRET_KEY: str
     ALGORITHM: str
