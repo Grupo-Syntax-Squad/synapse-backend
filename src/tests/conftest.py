@@ -41,8 +41,12 @@ def disable_loki_logging() -> Generator[None, None, None]:
 @pytest.fixture()
 def client(session: Session) -> Generator[TestClient, None, None]:
     app.dependency_overrides[get_db] = lambda: session
-    with TestClient(app) as c:
-        yield c
+    # impede que o scheduler seja iniciado/desligado durante os testes
+    with patch("src.modules.report_scheduler.scheduler.start"), \
+         patch("src.modules.report_scheduler.start_scheduler"), \
+         patch("src.modules.report_scheduler.scheduler.shutdown"):
+        with TestClient(app) as c:
+            yield c
     app.dependency_overrides.clear()
 
 
