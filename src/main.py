@@ -11,12 +11,11 @@ from src.database.get_db import get_db, engine
 from src.database.models import Base, Test
 from src.modules.root import GetRoot
 from src.schemas.basic_response import BasicResponse
-from src.routers import auth, notification, user, report
+from src.routers import auth, notification, user, report, chat, websocket
 from src.modules.report_scheduler import (
     scheduler,
     start_scheduler,
 )
-from src.routers import websocket
 
 origins = [
     "http://localhost:5173",
@@ -49,6 +48,7 @@ app.include_router(user.router)
 app.include_router(report.router)
 app.include_router(websocket.router)
 app.include_router(notification.router)
+app.include_router(chat.router)
 
 
 @app.get("/")

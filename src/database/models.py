@@ -130,3 +130,13 @@ class Faturamento(Base):  # type: ignore[valid-type, misc]
     zs_peso_liquido: Mapped[float] = mapped_column(Numeric)
     giro_sku_cliente: Mapped[float] = mapped_column(Numeric)
     SKU: Mapped[str] = mapped_column(String(50))
+
+
+class ChatHistory(Base):  # type: ignore[valid-type, misc]
+    __tablename__ = "chat_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    message: Mapped[str] = mapped_column(String)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    user_message: Mapped[bool] = mapped_column(Boolean)
+    created_at: Mapped[datetime] = mapped_column(DateTime)
