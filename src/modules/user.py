@@ -2,7 +2,7 @@ from datetime import datetime
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from datetime import datetime, timezone
+from datetime import timezone
 
 from src.enums.notification_type import NotificationType
 from src.logger_instance import logger

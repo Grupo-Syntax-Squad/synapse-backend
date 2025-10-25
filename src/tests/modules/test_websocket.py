@@ -9,7 +9,7 @@ from pytest import MonkeyPatch
 
 
 class DummyUser:
-    def __init__(self, id: int, username:str, is_admin: bool = False) -> None:
+    def __init__(self, id: int, username: str, is_admin: bool = False) -> None:
         self.id = id
         self.username = username
         self.is_admin = is_admin
