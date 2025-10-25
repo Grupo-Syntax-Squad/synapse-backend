@@ -82,7 +82,6 @@ class Auth:
         )
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            print(payload)
             if payload.get("type") != "access":
                 raise HTTPException(status_code=401, detail="Token inválido")
             user_id: int = int(payload.get("sub", 0))

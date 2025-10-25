@@ -1,5 +1,7 @@
+from typing import Any
 from sqlalchemy.orm import Mapped, mapped_column, declarative_base, relationship
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     ForeignKey,
@@ -9,7 +11,10 @@ from sqlalchemy import (
     func,
     text,
 )
+from sqlalchemy import Enum as SQLEnum
 from datetime import datetime
+
+from src.enums.notification_type import NotificationType
 
 Base = declarative_base()
 
@@ -36,6 +41,19 @@ class User(Base):  # type: ignore[valid-type, misc]
     receive_email: Mapped[bool] = mapped_column(Boolean, server_default=text("TRUE"))
     last_update: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     last_access: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+
+class Notification(Base):  # type: ignore[valid-type, misc]
+    __tablename__ = "notification"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    type: Mapped[NotificationType] = mapped_column(SQLEnum(NotificationType), nullable=False)
+    message: Mapped[str] = mapped_column(String, nullable=False)  
+    details: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    visualized: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
+    visualizedAt: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    visualizedBy: Mapped[int | None] = mapped_column(Integer, ForeignKey("user.id"), nullable=True)
 
 
 class Report(Base):  # type: ignore[valid-type, misc]
@@ -112,3 +130,13 @@ class Faturamento(Base):  # type: ignore[valid-type, misc]
     zs_peso_liquido: Mapped[float] = mapped_column(Numeric)
     giro_sku_cliente: Mapped[float] = mapped_column(Numeric)
     SKU: Mapped[str] = mapped_column(String(50))
+
+
+class ChatHistory(Base):  # type: ignore[valid-type, misc]
+    __tablename__ = "chat_history"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    message: Mapped[str] = mapped_column(String)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    user_message: Mapped[bool] = mapped_column(Boolean)
+    created_at: Mapped[datetime] = mapped_column(DateTime)

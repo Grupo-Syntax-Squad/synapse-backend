@@ -10,6 +10,7 @@ from src.main import app
 from src.settings import settings
 from src.database.models import Base, Report
 from src.database.get_db import get_db
+from src.modules.report_scheduler import scheduler
 
 
 @pytest.fixture
@@ -40,8 +41,12 @@ def disable_loki_logging() -> Generator[None, None, None]:
 @pytest.fixture()
 def client(session: Session) -> Generator[TestClient, None, None]:
     app.dependency_overrides[get_db] = lambda: session
-    with TestClient(app) as c:
-        yield c
+    # impede que o scheduler seja iniciado/desligado durante os testes
+    with patch("src.modules.report_scheduler.scheduler.start"), \
+         patch("src.modules.report_scheduler.start_scheduler"), \
+         patch("src.modules.report_scheduler.scheduler.shutdown"):
+        with TestClient(app) as c:
+            yield c
     app.dependency_overrides.clear()
 
 
@@ -67,3 +72,9 @@ def session(engine, tables) -> Generator[Session, None, None]:  # type: ignore[n
     session.close()
     transaction.rollback()
     connection.close()
+
+
+@pytest.fixture(autouse=True)
+def disable_scheduler() -> Generator[None, None, None]:
+    with patch.object(scheduler, "start", lambda *a, **kw: None):
+        yield
