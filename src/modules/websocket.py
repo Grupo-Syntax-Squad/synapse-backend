@@ -4,6 +4,10 @@ from fastapi import WebSocket
 from abc import ABC
 
 from src.database.models import Notification
+from src.nlp.extract_data_nl import RuleIntentClassifier, SQLQueryBuilder, ResponseGenerator
+from sqlalchemy.engine import Engine, create_engine
+from src.settings import settings
+from src.logger_instance import logger
 
 
 class WebSocketManager(ABC):
@@ -20,10 +24,40 @@ class WebSocketManager(ABC):
 
 
 class ChatWebSocketManager(WebSocketManager):
+    def __init__(self) -> None:
+        self._logger = logger
+        self._engine = create_engine(settings.DATABASE_URL)
+        self._builder = SQLQueryBuilder(self._engine)
+        super().__init__()
+
     async def send_personal_message(self, message: str, user_id: int) -> None:
         websocket = self.active_connections.get(user_id)
         if websocket:
-            await websocket.send_text(message)
+            await websocket.send_text(self._response_builder(message))
+
+    def _response_builder(self, text: str) -> None:
+        classifier = RuleIntentClassifier()
+        try:
+            intent, params = classifier.classify(text)
+        except Exception as e:
+            self._logger.error(f"Erro ao classificar intenção:{e}")
+            self._logger.error("Desculpe — não fui projetado para responder esse tipo de pergunta.")
+            return
+
+        self._logger.debug(f"Intent: {intent}")
+        self._logger.debug(f"Params: {params}")
+        try:
+            out = self._builder.execute(intent, params)
+        except Exception as e:
+            self._logger.error(f"Erro ao executar consulta: {e}")
+            self._logger.error("Desculpe — ocorreu um erro ao buscar os dados.")
+            return
+
+        rg = ResponseGenerator()
+        reply = rg.generate(intent, params, out)
+        self._logger.info("Resposta:")
+        self._logger.info(reply)
+        return reply
 
 
 class NotificationWebSocketManager(WebSocketManager):
