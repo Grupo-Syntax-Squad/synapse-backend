@@ -1,25 +1,11 @@
 import random
+import spacy
 import re
+import pandas as pd
 from datetime import datetime
 from typing import Any, Callable
-
-import pandas as pd
-import spacy
 from prophet import Prophet  # type: ignore[import-untyped]
-from sqlalchemy import Engine, create_engine, inspect, text
-
-from src.settings import settings
-
-
-class IntentEntityRecognizer:
-    def __init__(self) -> None:
-        self._nlp = spacy.load("pt_core_news_sm")
-
-    def recognize(self, text: str) -> str | None:
-        doc = self._nlp(text)
-        for ent in doc.ents:
-            return ent.text
-        return None
+from sqlalchemy import Engine, inspect, text
 
 
 MONTHS_PT = {
@@ -53,9 +39,47 @@ class RuleIntentClassifier:
     def __init__(self) -> None:
         self._nlp = spacy.load("pt_core_news_sm")
 
-    def classify(self, text: str) -> tuple[str, dict[str, Any]]:
+    def execute(self, text: str) -> tuple[str, dict[str, Any]]:
         t = text.lower()
         doc = self._nlp(text)
+        if any(
+            word in t
+            for word in [
+                "oi",
+                "olá",
+                "ola",
+                "eae",
+                "tudo bem",
+                "bom dia",
+                "boa tarde",
+                "boa noite",
+                "hey",
+                "iai",
+                "fala",
+                "salve",
+                "como vai",
+            ]
+        ):
+            return "greeting", {}
+        if any(
+            word in t
+            for word in [
+                "tchau",
+                "obrigado",
+                "obrigada",
+                "valeu",
+                "até logo",
+                "até mais",
+                "flw",
+                "falou",
+                "bye",
+                "adeus",
+                "encerrar",
+                "finalizar",
+                "fim",
+            ]
+        ):
+            return "farewell", {}
 
         sku = None
         m = self.SKU_RE.search(text)
@@ -192,7 +216,7 @@ class RuleIntentClassifier:
             if ent.label_.lower() in {"product", "produto", "sku"}:
                 return "sales_time_series", {"sku": ent.text}
 
-        raise ValueError("Não consegui identificar a intenção do usuário")
+        return "unknown_intent", {"original_text": text}
 
 
 class SQLQueryBuilder:
@@ -289,6 +313,17 @@ class SQLQueryBuilder:
         return len(df)
 
     def execute(self, intent: str, params: dict[str, Any]) -> Any:
+        if intent == "greeting":
+            return {"message": "greeting"}
+
+        if intent == "farewell":
+            return {"message": "farewell"}
+
+        if intent == "unknown_intent":
+            return {
+                "error": "Não entendi sua pergunta",
+                "original_text": params.get("original_text", ""),
+            }
         if intent == "total_stock":
             table = self._find_table(["estoque", "stock", "inventory"])
             if not table:
@@ -850,37 +885,12 @@ class SQLQueryBuilder:
         raise ValueError(f"Intent '{intent}' não suportada")
 
 
-def _demo(engine: Engine, text: str) -> None:
-    classifier = RuleIntentClassifier()
-    builder = SQLQueryBuilder(engine)
-    try:
-        intent, params = classifier.classify(text)
-    except Exception as e:
-        print("Erro ao classificar intenção:", e)
-        print("Desculpe — não fui projetado para responder esse tipo de pergunta.")
-        return
-
-    print("Intent:", intent)
-    print("Params:", params)
-    try:
-        out = builder.execute(intent, params)
-    except Exception as e:
-        print("Erro ao executar consulta:", e)
-        print("Desculpe — ocorreu um erro ao buscar os dados.")
-        return
-
-    rg = ResponseGenerator()
-    reply = rg.generate(intent, params, out)
-    print("Resposta:")
-    print(reply)
-
-
 class ResponseGenerator:
     def __init__(self) -> None:
         self._response_handlers: dict[str, Callable[[dict[str, Any], Any], str]] = {
-            "total_stock": self._format_total_stock,  # type: ignore[dict-item]
-            "distinct_products_count": self._format_distinct_products_count,  # type: ignore[dict-item]
-            "active_clients_count": self._format_active_clients_count,  # type: ignore[dict-item]
+            "total_stock": self._format_total_stock,
+            "distinct_products_count": self._format_distinct_products_count,
+            "active_clients_count": self._format_active_clients_count,
             "sku_sales_compare": self._format_sku_sales_compare,
             "sku_best_month": self._format_sku_best_month,
             "sales_time_series": self._format_sales_time_series,
@@ -890,127 +900,48 @@ class ResponseGenerator:
             "predict_stockout": self._format_predict_stockout,
             "predict_top_sales": self._format_predict_top_sales,
             "predict_sku_sales": self._format_predict_sku_sales,
+            "greeting": self._format_greeting,
+            "farewell": self._format_farewell,
+            "unknown_intent": self._format_unknown_intent,
         }
 
-    def _format_predict_stockout(self, params: dict[str, Any], result: Any) -> str:
-        if "error" in result:
-            return result["error"]  # type: ignore[no-any-return]
+    def _format_greeting(self, params: dict[str, Any], result: Any) -> str:
+        greetings = [
+            "Olá! Como posso ajudar você com informações sobre vendas e estoque?",
+            "Oi! Estou aqui para ajudar com dados de vendas, estoque e previsões.",
+            "Olá! Pronto para analisar alguns dados de negócio?",
+            "Oi! Em que posso ser útil hoje?",
+        ]
+        return random.choice(greetings)
 
-        predictions = result.get("predictions", [])
-        if not predictions:
-            return "Não foi identificado risco de estoque zero para nenhum SKU no próximo mês."
+    def _format_farewell(self, params: dict[str, Any], result: Any) -> str:
+        farewells = [
+            "Até logo! Fico à disposição para mais análises.",
+            "Obrigado! Volte sempre que precisar de informações.",
+            "Tchau! Foi um prazer ajudar.",
+            "Até mais! Estarei aqui quando precisar.",
+        ]
+        return random.choice(farewells)
 
-        response = "SKUs com risco de estoque zero:\n\n"
-        for p in predictions:
-            stockout_date = p["predicted_stockout"].strftime("%d/%m/%Y")
-            current_avg = int(p["current_avg"])
-            predicted_avg = int(p["predicted_avg"])
-            percent_drop = (
-                ((current_avg - predicted_avg) / current_avg * 100)
-                if current_avg > 0
-                else 0
-            )
+    def _format_unknown_intent(self, params: dict[str, Any], result: Any) -> str:
+        original_text = params.get("original_text", "")
+        responses = [
+            f"Desculpe, não entendi '{original_text}'. Posso ajudar com informações sobre vendas, estoque, previsões e análises de SKU.",
+            f"Não consegui compreender '{original_text}'. Tente perguntar sobre vendas, estoque, produtos mais vendidos ou previsões.",
+            f"Minha especialidade é análise de dados comerciais. Não entendi '{original_text}'. Que tal perguntar sobre vendas ou estoque?",
+        ]
+        return random.choice(responses)
 
-            response += (
-                f"SKU: {p['sku']}\n"
-                f"- Data prevista: {stockout_date}\n"
-                f"- Média atual: {current_avg} unidades\n"
-                f"- Média prevista: {predicted_avg} unidades\n"
-                f"- Queda prevista: {percent_drop:.1f}%\n\n"
-            )
-        return response
-
-    def _format_predict_top_sales(self, params: dict[str, Any], result: Any) -> str:
-        if "error" in result:
-            return result["error"]  # type: ignore[no-any-return]
-
-        predictions = result.get("predictions", [])
-        if not predictions:
-            return "Não foi possível fazer previsões de vendas no momento."
-
-        period = (
-            "próximo mês" if params.get("period") == "next_month" else "próximo ano"
-        )
-        response = f"Previsão dos SKUs mais vendidos para o {period}:\n\n"
-
-        for i, p in enumerate(predictions, 1):
-            predicted = int(p["predicted_sales"])
-            current = int(p["current_avg"])
-            growth = p["growth_rate"]
-
-            growth_text = (
-                f"crescimento de {growth:.1f}%"
-                if growth > 0
-                else f"queda de {abs(growth):.1f}%"
-                if growth < 0
-                else "estável"
-            )
-
-            response += (
-                f"{i}. SKU: {p['sku']}\n"
-                f"   - Previsão: {predicted} unidades\n"
-                f"   - Média atual: {current} unidades\n"
-                f"   - Tendência: {growth_text}\n\n"
-            )
-        return response
-
-    def _format_predict_sku_sales(self, params: dict[str, Any], result: Any) -> str:
-        if "error" in result:
-            return result["error"]  # type: ignore[no-any-return]
-
-        sku = result["sku"]
-        predicted = int(result["predicted_sales"])
-        current = int(result["current_avg"])
-        growth = result["growth_rate"]
-        period = (
-            "próximo mês" if params.get("period") == "next_month" else "próximo ano"
-        )
-
-        growth_text = (
-            f"crescimento de {growth:.1f}%"
-            if growth > 0
-            else f"queda de {abs(growth):.1f}%"
-            if growth < 0
-            else "estável"
-        )
-
-        ci = result.get("confidence_interval", {})
-        confidence_text = (
-            f"\nIntervalo de confiança: entre {int(ci['lower'])} e {int(ci['upper'])} unidades"
-            if ci
-            else ""
-        )
-
-        return (
-            f"Análise de vendas para o SKU {sku}:\n\n"
-            f"- Período: {period}\n"
-            f"- Média atual: {current} unidades\n"
-            f"- Previsão: {predicted} unidades\n"
-            f"- Tendência: {growth_text}{confidence_text}"
-        )
-
-    def generate(self, intent: str, params: dict[str, Any], result: Any) -> str:
-        handler = self._response_handlers.get(intent)
-        if not handler:
-            print(
-                f"Aviso: Handler de resposta não encontrado para a intenção '{intent}'"
-            )
-            return f"Não tenho um formato de resposta específico para '{intent}', mas o resultado foi: {result}"
-
-        try:
-            return handler(params, result)
-        except Exception as e:
-            print(f"Erro ao gerar resposta para intent '{intent}': {e}")
-            return "Desculpe — não consegui formular uma resposta amigável a partir dos dados retornados."
-
-    def _format_total_stock(self, result: Any) -> str:
+    def _format_total_stock(self, params: dict[str, Any], result: Any) -> str:
         if isinstance(result, dict) and "total_stock" in result:
             total = result["total_stock"]
             return f"O total de itens em estoque é {total}."
 
         return "Nenhum dado disponível sobre estoque."
 
-    def _format_distinct_products_count(self, result: Any) -> str:
+    def _format_distinct_products_count(
+        self, params: dict[str, Any], result: Any
+    ) -> str:
         c = result.get("distinct_products") if isinstance(result, dict) else None
         return (
             f"Encontramos {c} produtos diferentes no estoque."
@@ -1018,7 +949,7 @@ class ResponseGenerator:
             else "Não foi possível contar os produtos."
         )
 
-    def _format_active_clients_count(self, result: Any) -> str:
+    def _format_active_clients_count(self, params: dict[str, Any], result: Any) -> str:
         ac = result.get("active_clients") if isinstance(result, dict) else None
         note = result.get("note") if isinstance(result, dict) else None
         base = (
@@ -1132,26 +1063,118 @@ class ResponseGenerator:
         )
         return f"Não foi possível calcular o estoque{client_info}."
 
+    def _format_predict_stockout(self, params: dict[str, Any], result: Any) -> str:
+        if "error" in result:
+            return result["error"]  # type: ignore[no-any-return]
+
+        predictions = result.get("predictions", [])
+        if not predictions:
+            return "Não foi identificado risco de estoque zero para nenhum SKU no próximo mês."
+
+        response = "SKUs com risco de estoque zero:\n\n"
+        for p in predictions:
+            stockout_date = p["predicted_stockout"].strftime("%d/%m/%Y")
+            current_avg = int(p["current_avg"])
+            predicted_avg = int(p["predicted_avg"])
+            percent_drop = (
+                ((current_avg - predicted_avg) / current_avg * 100)
+                if current_avg > 0
+                else 0
+            )
+
+            response += (
+                f"SKU: {p['sku']}\n"
+                f"- Data prevista: {stockout_date}\n"
+                f"- Média atual: {current_avg} unidades\n"
+                f"- Média prevista: {predicted_avg} unidades\n"
+                f"- Queda prevista: {percent_drop:.1f}%\n\n"
+            )
+        return response
+
+    def _format_predict_top_sales(self, params: dict[str, Any], result: Any) -> str:
+        if "error" in result:
+            return result["error"]  # type: ignore[no-any-return]
+
+        predictions = result.get("predictions", [])
+        if not predictions:
+            return "Não foi possível fazer previsões de vendas no momento."
+
+        period = (
+            "próximo mês" if params.get("period") == "next_month" else "próximo ano"
+        )
+        response = f"Previsão dos SKUs mais vendidos para o {period}:\n\n"
+
+        for i, p in enumerate(predictions, 1):
+            predicted = int(p["predicted_sales"])
+            current = int(p["current_avg"])
+            growth = p["growth_rate"]
+
+            growth_text = (
+                f"crescimento de {growth:.1f}%"
+                if growth > 0
+                else f"queda de {abs(growth):.1f}%"
+                if growth < 0
+                else "estável"
+            )
+
+            response += (
+                f"{i}. SKU: {p['sku']}\n"
+                f"   - Previsão: {predicted} unidades\n"
+                f"   - Média atual: {current} unidades\n"
+                f"   - Tendência: {growth_text}\n\n"
+            )
+        return response
+
+    def _format_predict_sku_sales(self, params: dict[str, Any], result: Any) -> str:
+        if "error" in result:
+            return result["error"]  # type: ignore[no-any-return]
+
+        sku = result["sku"]
+        predicted = int(result["predicted_sales"])
+        current = int(result["current_avg"])
+        growth = result["growth_rate"]
+        period = (
+            "próximo mês" if params.get("period") == "next_month" else "próximo ano"
+        )
+
+        growth_text = (
+            f"crescimento de {growth:.1f}%"
+            if growth > 0
+            else f"queda de {abs(growth):.1f}%"
+            if growth < 0
+            else "estável"
+        )
+
+        ci = result.get("confidence_interval", {})
+        confidence_text = (
+            f"\nIntervalo de confiança: entre {int(ci['lower'])} e {int(ci['upper'])} unidades"
+            if ci
+            else ""
+        )
+
+        return (
+            f"Análise de vendas para o SKU {sku}:\n\n"
+            f"- Período: {period}\n"
+            f"- Média atual: {current} unidades\n"
+            f"- Previsão: {predicted} unidades\n"
+            f"- Tendência: {growth_text}{confidence_text}"
+        )
+
+    def execute(self, intent: str, params: dict[str, Any], result: Any) -> str:
+        handler = self._response_handlers.get(intent)
+        if not handler:
+            print(
+                f"Aviso: Handler de resposta não encontrado para a intenção '{intent}'"
+            )
+            return f"Não tenho um formato de resposta específico para '{intent}', mas o resultado foi: {result}"
+
+        try:
+            return handler(params, result)
+        except Exception as e:
+            print(f"Erro ao gerar resposta para intent '{intent}': {e}")
+            return "Desculpe — não consegui formular uma resposta amigável a partir dos dados retornados."
+
 
 if __name__ == "__main__":
-    engine = create_engine(settings.DATABASE_URL)
-    examples = [
-        "Qual o total de items em estoque?",
-        "O item SKU_10 teve maior venda em janeiro de 2024 ou em janeiro de 2025?",
-        "Qual o mes que SKU_10 mais vendeu?",
-        "Quero quantos clientes ativos temos?",
-        "Quantos produtos diferentes temos em estoque?",
-        "Mostre o top 5 skus mais vendidos",
-        "Qual a previsão do tempo para amanhã?",
-        "Qual o total de vendas entre janeiro de 2024 e fevereiro de 2024?",
-        "Qual o estoque do cliente 4967?",
-        "Qual SKU vai ficar sem estoque?",
-        "Quais produtos correm risco de acabar?",
-        "Previsão de estoque zero",
-    ]
-    for q in examples:
-        print("\nQuerying:", q)
-        try:
-            _demo(engine, q)
-        except Exception as e:
-            print("Erro:", e)
+    # TODO: Criar testes de saudacoes e despedidas
+    ...
