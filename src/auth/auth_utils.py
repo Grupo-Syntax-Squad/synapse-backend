@@ -4,10 +4,12 @@ from jose import ExpiredSignatureError, JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from passlib.context import CryptContext
+
 from src.database.models import User
 from src.database.get_db import get_db
 from src.schemas.auth import CurrentUser
 from src.settings import settings
+from src.logger_instance import logger
 
 
 SECRET_KEY = settings.SECRET_KEY
@@ -72,7 +74,7 @@ class Auth:
         db: Session = Depends(get_db),
     ) -> CurrentUser | None:
         if NO_AUTH:
-            print("NO_AUTH is True, skipping authentication")
+            logger.debug("NO_AUTH is True, skipping authentication")
             return None
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciais inválidas"
@@ -89,7 +91,6 @@ class Auth:
                 raise credentials_exception
             with db as session:
                 user = session.query(User).filter(User.id == user_id).first()
-                print(user)
                 if user is None or not user.is_active:
                     raise credentials_exception
         except ExpiredSignatureError:

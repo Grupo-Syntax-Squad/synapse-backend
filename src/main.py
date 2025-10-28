@@ -16,6 +16,9 @@ from src.modules.report_scheduler import (
     scheduler,
     start_scheduler,
 )
+from src.logger_instance import logger
+
+logger.debug(f"System settings: {settings}")
 
 origins = [
     "http://localhost:5173",

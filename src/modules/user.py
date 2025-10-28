@@ -29,7 +29,9 @@ class CreateUser:
                 self._log.info("User created successfully")
                 notification = await self._create_new_user_notification(user)
                 if notification:
-                    await notifications_manager.send_notification(notification)
+                    await notifications_manager.send_notification(
+                        notifications_manager.notification_to_schema(notification)
+                    )
                 return BasicResponse(message="OK")
         except HTTPException:
             raise
@@ -84,17 +86,17 @@ class CreateUser:
         session.flush()
         session.refresh(user)
         return user
-    
+
     async def _create_new_user_notification(self, user: User) -> Notification | None:
         notification = Notification(
             type=NotificationType.NEW_USER,
-            message=f"Novo usuário cadastrado: {user.username}",
+            message=f"New user registered: {user.username}",
             details={"user_id": user.id, "timestamp": datetime.utcnow().isoformat()},
         )
 
         self._session.add(notification)
         self._session.commit()
-        self._session.refresh(notification)   
+        self._session.refresh(notification)
         return notification
 
 
@@ -107,9 +109,11 @@ class ListUsers:
         try:
             self._log.info("Listing active users")
             with self._session as session:
-                results = session.execute(
-                    select(User).where(User.is_active.is_(True))
-                ).scalars().all()
+                results = (
+                    session.execute(select(User).where(User.is_active.is_(True)))
+                    .scalars()
+                    .all()
+                )
 
                 users: list[UserResponse] = [
                     UserResponse(
@@ -173,7 +177,9 @@ class UpdateUser:
 
                 if self._request.field == "email":
                     existing = session.execute(
-                        select(User).where(User.email == self._request.value, User.id != user.id)
+                        select(User).where(
+                            User.email == self._request.value, User.id != user.id
+                        )
                     ).scalar_one_or_none()
                     if existing:
                         raise HTTPException(
@@ -183,7 +189,9 @@ class UpdateUser:
 
                 if self._request.field == "username":
                     existing = session.execute(
-                        select(User).where(User.username == self._request.value, User.id != user.id)
+                        select(User).where(
+                            User.username == self._request.value, User.id != user.id
+                        )
                     ).scalar_one_or_none()
                     if existing:
                         raise HTTPException(

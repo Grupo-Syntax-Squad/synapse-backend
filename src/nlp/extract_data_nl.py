@@ -7,12 +7,14 @@ from typing import Any, Callable
 from prophet import Prophet  # type: ignore[import-untyped]
 from sqlalchemy import Engine, inspect, text
 
+from src.logger_instance import logger
+
 
 MONTHS_PT = {
     "janeiro": 1,
     "fevereiro": 2,
-    "março": 3,
     "marco": 3,
+    "março": 3,
     "abril": 4,
     "maio": 5,
     "junho": 6,
@@ -36,187 +38,147 @@ class RuleIntentClassifier:
         re.I,
     )
 
+    VOCABULARY = {
+        "greeting": [
+            "oi",
+            "olá",
+            "ola",
+            "eae",
+            "tudo bem",
+            "bom dia",
+            "boa tarde",
+            "boa noite",
+            "hey",
+            "iai",
+            "fala",
+            "salve",
+            "como vai",
+        ],
+        "farewell": [
+            "tchau",
+            "obrigado",
+            "obrigada",
+            "valeu",
+            "até logo",
+            "até mais",
+            "flw",
+            "falou",
+            "bye",
+            "adeus",
+            "encerrar",
+            "finalizar",
+            "fim",
+        ],
+        "predict_stockout": [
+            "estoque zero",
+            "sem estoque",
+            "acabar",
+            "ficar sem",
+            "esgotar",
+        ],
+        "predict_top_sales": [
+            "top",
+            "maiores",
+            "principais",
+            "mais vendidos",
+            "mais vendeu",
+        ],
+        "predict_sku_sales": ["vendas", "vender"],
+        "total_stock": ["total", "estoque"],
+        "active_clients_count": [
+            "quantos",
+            "quantidade",
+            "número de",
+            "numero de",
+            "clientes",
+            "ativos",
+            "ativo",
+        ],
+        "distinct_products_count": [
+            "quantos",
+            "quantidade",
+            "numero",
+            "número",
+            "produtos",
+            "skus",
+            "estoque",
+        ],
+        "sku_sales_compare": ["maior", "comparar", "teve maior"],
+        "sku_best_month": ["que mes", "mais vendeu", "melhor mes", "mês"],
+        "sales_between_dates": ["entre", " a ", "até", "ate"],
+        "top_n_skus": ["top", "maiores", "principais"],
+        "stock_by_client": ["estoque", "cliente"],
+        "sales_time_series": ["venda", "vendas", "faturamento"],
+    }
+
     def __init__(self) -> None:
         self._nlp = spacy.load("pt_core_news_sm")
 
     def execute(self, text: str) -> tuple[str, dict[str, Any]]:
-        t = text.lower()
+        text_lower = text.lower()
         doc = self._nlp(text)
-        if any(
-            word in t
-            for word in [
-                "oi",
-                "olá",
-                "ola",
-                "eae",
-                "tudo bem",
-                "bom dia",
-                "boa tarde",
-                "boa noite",
-                "hey",
-                "iai",
-                "fala",
-                "salve",
-                "como vai",
-            ]
-        ):
-            return "greeting", {}
-        if any(
-            word in t
-            for word in [
-                "tchau",
-                "obrigado",
-                "obrigada",
-                "valeu",
-                "até logo",
-                "até mais",
-                "flw",
-                "falou",
-                "bye",
-                "adeus",
-                "encerrar",
-                "finalizar",
-                "fim",
-            ]
-        ):
-            return "farewell", {}
+        logger.debug(f"Text lower: {text_lower}")
 
-        sku = None
-        m = self.SKU_RE.search(text)
-        if m:
-            sku = m.group(1)
+        scores = {intent: 0 for intent in self.VOCABULARY}
+        for intent, words in self.VOCABULARY.items():
+            for w in words:
+                if w in text_lower:
+                    scores[intent] += 1
+
+        best_intent = max(scores, key=scores.get)  # type: ignore[arg-type]
+        logger.debug(f"BoW scores: {scores}, best intent: {best_intent}")
+
+        sku_match = self.SKU_RE.search(text)
+        sku = sku_match.group(1) if sku_match else None
 
         years = [int(y) for y in self.YEAR_RE.findall(text)]
         month_year = self.MONTH_WITH_YEAR_RE.findall(text)
-        months = []
-        for mo, yr in month_year:
-            months.append(
-                {
-                    "month": MONTHS_PT.get(mo.lower().replace("ç", "c"), None),
-                    "year": int(yr),
-                }
-            )
-        if (
-            "previsão" in t
-            or "prever" in t
-            or "tendência" in t
-            or "vai ficar" in t
-            or "correm risco" in t
-            or "podem acabar" in t
-            or "risco de acabar" in t
-        ):
-            if (
-                "estoque zero" in t
-                or "sem estoque" in t
-                or "acabar" in t
-                or "ficar sem" in t
-                or "esgotar" in t
-            ):
-                return "predict_stockout", {"sku": sku} if sku else {}
-
-            if "mais" in t and ("vendido" in t or "consumido" in t):
-                period = None
-                if "próximo mês" in t or "mês que vem" in t:
-                    period = "next_month"
-                elif "próximo ano" in t or "ano que vem" in t:
-                    period = "next_year"
-                return "predict_top_sales", {"period": period or "next_month"}
-
-            if sku and ("vendas" in t or "vender" in t):
-                period = None
-                if "próximo mês" in t or "mês que vem" in t:
-                    period = "next_month"
-                elif "próximo ano" in t or "ano que vem" in t:
-                    period = "next_year"
-                return "predict_sku_sales", {
-                    "sku": sku,
-                    "period": period or "next_month",
-                }
-
-        if "total" in t and "estoque" in t:
-            return "total_stock", {}
-
-        if (
-            (
-                "quantos" in t
-                or "quantidade" in t
-                or "número de" in t
-                or "numero de" in t
-            )
-            and "clientes" in t
-            and ("ativos" in t or "ativo" in t)
-        ):
-            return "active_clients_count", {}
-
-        if (
-            ("quantos" in t or "quantidade" in t or "numero" in t or "número" in t)
-            and ("produtos" in t or "skus" in t)
-            and "estoque" in t
-        ):
-            return "distinct_products_count", {}
-
-        if ("maior" in t or "comparar" in t or "teve maior" in t) and sku:
-            params = {"sku": sku}
-            if len(months) >= 2:
-                params["periods"] = months[:2]
-            elif len(years) >= 2:
-                params["years"] = years[:2]
-            return "sku_sales_compare", params
-
-        if (
-            "que mes" in t or "mais vendeu" in t or "melhor mes" in t or "mês" in t
-        ) and sku:
-            return "sku_best_month", {"sku": sku}
-
-        if ("entre" in t or " a " in t or "até" in t or "ate" in t) and (
-            len(months) >= 2 or len(years) >= 2
-        ):
-            if len(months) >= 2:
-                return (
-                    "sales_between_dates",
-                    {
-                        "start": months[0],
-                        "end": months[1],
-                        **({"sku": sku} if sku else {}),
-                    },
-                )
-            if len(years) >= 2:
-                return (
-                    "sales_between_dates",
-                    {
-                        "start": {"year": years[0]},
-                        "end": {"year": years[1]},
-                        **({"sku": sku} if sku else {}),
-                    },
-                )
+        months = [
+            {"month": MONTHS_PT.get(m.lower().replace("ç", "c")), "year": int(y)}
+            for m, y in month_year
+        ]
 
         mnum = self.NUMBER_RE.search(text)
-        if (
-            "top" in t or "maiores" in t or "principais" in t or "mais vendidos" in t
-        ) and (mnum or "mais vendidos" in t):
-            n = 10
-            if mnum:
-                n = int(mnum.group(1) or mnum.group(2))
-            return "top_n_skus", {"n": int(n)}
+        n = int(mnum.group(1) or mnum.group(2)) if mnum else 10
 
-        if "estoque" in t and "cliente" in t:
-            mclient = re.search(r"\b(\d{2,6})\b", text)
-            client = int(mclient.group(1)) if mclient else None
-            return "stock_by_client", {**({"client": client} if client else {})}
+        client_match = re.search(r"\b(\d{2,6})\b", text)
+        client = int(client_match.group(1)) if client_match else None
 
-        if "venda" in t or "vendas" in t or "faturamento" in t:
-            params = {}
+        params = {}
+        if best_intent in {
+            "predict_stockout",
+            "predict_sku_sales",
+            "sku_sales_compare",
+            "sku_best_month",
+            "sales_between_dates",
+            "top_n_skus",
+            "stock_by_client",
+            "sales_time_series",
+        }:
             if sku:
                 params["sku"] = sku
             if months:
                 params["months"] = months
-            return "sales_time_series", params
+            if years:
+                params["years"] = years
+            if best_intent == "top_n_skus":
+                params["n"] = n
+            if best_intent == "stock_by_client" and client:
+                params["client"] = client
+            if best_intent == "sales_between_dates":
+                if len(months) >= 2:
+                    params.update({"start": months[0], "end": months[1]})
+                elif len(years) >= 2:
+                    params.update(
+                        {"start": {"year": years[0]}, "end": {"year": years[1]}}
+                    )
 
         for ent in doc.ents:
             if ent.label_.lower() in {"product", "produto", "sku"}:
-                return "sales_time_series", {"sku": ent.text}
+                best_intent = "sales_time_series"
+                params["sku"] = ent.text
 
-        return "unknown_intent", {"original_text": text}
+        return best_intent, params
 
 
 class SQLQueryBuilder:
@@ -777,7 +739,9 @@ class SQLQueryBuilder:
                                 )
 
                         except Exception as e:
-                            print(f"Erro na previsão do SKU {str(sku)}: {str(e)}")
+                            logger.error(
+                                f"Erro na previsão do SKU {str(sku)}: {str(e)}"
+                            )
                             continue
 
                     results.sort(key=lambda x: x["predicted_stockout"])
@@ -824,7 +788,9 @@ class SQLQueryBuilder:
                             )
 
                         except Exception as e:
-                            print(f"Erro na previsão do SKU {str(sku)}: {str(e)}")
+                            logger.error(
+                                f"Erro na previsão do SKU {str(sku)}: {str(e)}"
+                            )
                             continue
 
                     results.sort(key=lambda x: x["predicted_sales"], reverse=True)
@@ -1163,7 +1129,7 @@ class ResponseGenerator:
     def execute(self, intent: str, params: dict[str, Any], result: Any) -> str:
         handler = self._response_handlers.get(intent)
         if not handler:
-            print(
+            logger.warning(
                 f"Aviso: Handler de resposta não encontrado para a intenção '{intent}'"
             )
             return f"Não tenho um formato de resposta específico para '{intent}', mas o resultado foi: {result}"
@@ -1171,10 +1137,5 @@ class ResponseGenerator:
         try:
             return handler(params, result)
         except Exception as e:
-            print(f"Erro ao gerar resposta para intent '{intent}': {e}")
+            logger.error(f"Erro ao gerar resposta para intent '{intent}': {e}")
             return "Desculpe — não consegui formular uma resposta amigável a partir dos dados retornados."
-
-
-if __name__ == "__main__":
-    # TODO: Criar testes de saudacoes e despedidas
-    ...

@@ -77,7 +77,7 @@ class ChatHistoryCreator:
             now = datetime.now(timezone.utc)
             user = self._get_user_by_id(user_id)
             new_chat_history = ChatHistory(
-                {
+                **{
                     "message": message,
                     "user_id": user.id,
                     "user_message": user_message,
