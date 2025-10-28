@@ -39,23 +39,35 @@ class SendReportToSubscribers:
             USE_CREDENTIALS=True,
         )
         self.fm = FastMail(self.conf)
-        
+
     async def execute(self) -> None:
         logger.info("Iniciando processo de envio de e-mails.")
-        await notifications_manager.send_global_message("Iniciando processo de envio de e-mails.")
+        await notifications_manager.send_global_message(
+            "Initializing send report e-mails process."
+        )
 
         try:
-            report = self.session.query(Report).filter(Report.id == self.request.report_id).first()
+            report = (
+                self.session.query(Report)
+                .filter(Report.id == self.request.report_id)
+                .first()
+            )
             if not report:
-                logger.error(f"Relatório com id {self.request.report_id} não encontrado.")
+                logger.error(
+                    f"Relatório com id {self.request.report_id} não encontrado."
+                )
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Relatório com id {self.request.report_id} não encontrado.",
                 )
 
-            users: List[User] = self.session.query(User).filter(User.receive_email.is_(True)).all()
+            users: List[User] = (
+                self.session.query(User).filter(User.receive_email.is_(True)).all()
+            )
             if not users:
-                await notifications_manager.send_global_message("Nenhum usuário para enviar e-mail.")
+                await notifications_manager.send_global_message(
+                    "No user to send report e-mail."
+                )
                 logger.warning("Nenhum usuário para enviar e-mail.")
                 return
 
@@ -71,29 +83,37 @@ class SendReportToSubscribers:
 
             if failed_users:
                 await notifications_manager.send_global_message(
-                    f"Tentando reenviar e-mails para {len(failed_users)} usuários com falha."
+                    f"Trying to resend e-mails to {len(failed_users)} with fail."
                 )
-                final_failed_users = await self.retry_failed_emails(failed_users, report)
+                final_failed_users = await self.retry_failed_emails(
+                    failed_users, report
+                )
                 success_count += len(users) - len(final_failed_users) - success_count
 
-            logger.info(f"E-mails enviados: {success_count}, falhas: {len(failed_users)}") 
-            if failed_users:           
+            logger.info(f"E-mails sended: {success_count}, fails: {len(failed_users)}")
+            if failed_users:
                 logger.debug(f"Detalhes das falhas: {failed_users}")
-                notification = await self.create_email_failure_notification(final_failed_users)
+                notification = await self.create_email_failure_notification(
+                    final_failed_users
+                )
                 if notification:
-                    await notifications_manager.send_notification(notification)
+                    await notifications_manager.send_notification(
+                        notifications_manager.notification_to_schema(notification)
+                    )
             else:
-                await notifications_manager.send_global_message("Todos os e-mails foram enviados com sucesso.")
+                await notifications_manager.send_global_message(
+                    "All e-mails sended successfully."
+                )
         except Exception as e:
             logger.error(f"Erro ao processar envio de e-mails: {e}")
             await notifications_manager.send_global_message(
-                f"Erro ao processar envio de e-mails: {e}"
+                "Error processing e-mails sending."
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Erro ao processar envio de e-mails: {e}",
             )
-        
+
     async def send_email_to_user(self, user: User, report: Report) -> User | None:
         message = MessageSchema(
             subject=report.name,
@@ -110,12 +130,14 @@ class SendReportToSubscribers:
         except Exception as e:
             logger.error(f"Erro ao enviar e-mail para {user.email}: {e}")
             await notifications_manager.send_global_message(
-                f"Erro ao enviar e-mail para {user.email}: {e}"
+                f"Error sending email to {user.email}"
             )
             self.session.rollback()
             return user
-        
-    async def retry_failed_emails(self, failed_users: List[User], report: Report, max_retries: int = 3) -> list[User]:
+
+    async def retry_failed_emails(
+        self, failed_users: List[User], report: Report, max_retries: int = 3
+    ) -> list[User]:
         final_failures: List[User] = failed_users.copy()
         for _ in range(max_retries):
             if not final_failures:
@@ -130,8 +152,10 @@ class SendReportToSubscribers:
                 if result:
                     final_failures.append(result)
         return final_failures
-    
-    async def create_email_failure_notification(self, failed_users: list[User]) -> Notification | None:
+
+    async def create_email_failure_notification(
+        self, failed_users: list[User]
+    ) -> Notification | None:
         if not failed_users:
             return None
 
@@ -139,13 +163,16 @@ class SendReportToSubscribers:
 
         notification = Notification(
             type=NotificationType.FAILED_EMAIL,
-            message=f"Falha no envio de e-mails para {len(failed_emails)} usuários",
-            details={"failed_emails": failed_emails, "timestamp": datetime.utcnow().isoformat()},
+            message=f"Fail to send e-mails to {len(failed_emails)} users.",
+            details={
+                "failed_emails": failed_emails,
+                "timestamp": datetime.utcnow().isoformat(),
+            },
         )
 
         self.session.add(notification)
         self.session.commit()
-        self.session.refresh(notification)   
+        self.session.refresh(notification)
         return notification
 
 

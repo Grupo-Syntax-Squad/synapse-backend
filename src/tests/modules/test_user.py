@@ -86,7 +86,9 @@ class TestUser:
         response = client.post("/users/register", json=payload)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    def test_list_users_returns_only_active(self, session: Session, client: TestClient) -> None:
+    def test_list_users_returns_only_active(
+        self, session: Session, client: TestClient
+    ) -> None:
         payload1 = {
             "username": "ListUser1",
             "email": "listuser1@gmail.com",
@@ -127,64 +129,112 @@ class TestUser:
         assert payload2["username"] in usernames
         assert payload_inactive["username"] not in usernames
 
-    def test_update_user_field_success(self, session: Session, client: TestClient) -> None:
-        target = {"username": "TargetUser", "email": "target@example.com", "password": "password123"}
-        admin = {"username": "AdminUser", "email": "admin@example.com", "password": "adminpass123"}
+    def test_update_user_field_success(
+        self, session: Session, client: TestClient
+    ) -> None:
+        target = {
+            "username": "TargetUser",
+            "email": "target@example.com",
+            "password": "password123",
+        }
+        admin = {
+            "username": "AdminUser",
+            "email": "admin@example.com",
+            "password": "adminpass123",
+        }
 
         r = client.post("/users/register", json=target)
         assert r.status_code == status.HTTP_200_OK
         r = client.post("/users/register", json=admin)
         assert r.status_code == status.HTTP_200_OK
 
-        admin_obj = session.execute(select(User).where(User.email == admin["email"])).scalar_one()
+        admin_obj = session.execute(
+            select(User).where(User.email == admin["email"])
+        ).scalar_one()
         admin_obj.is_admin = True
         session.commit()
 
-        login = client.post("/auth/login", json={"email": admin["email"], "password": admin["password"]})
-        print(f"Login response: {login}")
-        print(f"LOgin Cookies: {login.cookies}")
+        login = client.post(
+            "/auth/login", json={"email": admin["email"], "password": admin["password"]}
+        )
         assert login.status_code == status.HTTP_200_OK
 
-        target_obj = session.execute(select(User).where(User.email == target["email"])).scalar_one()
-        payload = {"id": target_obj.id, "field": "username", "value": "TargetUserUpdated"}
+        target_obj = session.execute(
+            select(User).where(User.email == target["email"])
+        ).scalar_one()
+        payload = {
+            "id": target_obj.id,
+            "field": "username",
+            "value": "TargetUserUpdated",
+        }
 
-        resp = client.patch("/users", json=payload, cookies={"access_token": login.cookies['access_token']})
+        resp = client.patch(
+            "/users",
+            json=payload,
+            cookies={"access_token": login.cookies["access_token"]},
+        )
         assert resp.status_code == status.HTTP_200_OK
 
-        updated = session.execute(select(User).where(User.id == target_obj.id)).scalar_one()
+        updated = session.execute(
+            select(User).where(User.id == target_obj.id)
+        ).scalar_one()
         assert updated.username == "TargetUserUpdated"
 
-    def test_update_user_email_conflict(self, session: Session, client: TestClient) -> None:
+    def test_update_user_email_conflict(
+        self, session: Session, client: TestClient
+    ) -> None:
         u1 = {"username": "U1", "email": "u1@example.com", "password": "password123"}
         u2 = {"username": "U2", "email": "u2@example.com", "password": "password123"}
 
         client.post("/users/register", json=u1)
         client.post("/users/register", json=u2)
 
-        u1_obj = session.execute(select(User).where(User.email == u1["email"])).scalar_one()
+        u1_obj = session.execute(
+            select(User).where(User.email == u1["email"])
+        ).scalar_one()
         u1_obj.is_admin = True
         session.commit()
 
-        login = client.post("/auth/login", json={"email": u1["email"], "password": u1["password"]})
+        login = client.post(
+            "/auth/login", json={"email": u1["email"], "password": u1["password"]}
+        )
         assert login.status_code == status.HTTP_200_OK
 
-        u2_obj = session.execute(select(User).where(User.email == u2["email"])).scalar_one()
+        u2_obj = session.execute(
+            select(User).where(User.email == u2["email"])
+        ).scalar_one()
         payload = {"id": u2_obj.id, "field": "email", "value": u1["email"]}
 
-        resp = client.patch("/users", json=payload, cookies={"access_token": login.cookies['access_token']})
+        resp = client.patch(
+            "/users",
+            json=payload,
+            cookies={"access_token": login.cookies["access_token"]},
+        )
         assert resp.status_code == status.HTTP_409_CONFLICT
         assert resp.json()["detail"] == "Email already registered"
 
     def test_update_user_not_found(self, session: Session, client: TestClient) -> None:
-        admin = {"username": "Admin2", "email": "admin2@example.com", "password": "adminpass123"}
+        admin = {
+            "username": "Admin2",
+            "email": "admin2@example.com",
+            "password": "adminpass123",
+        }
         client.post("/users/register", json=admin)
-        admin_obj = session.execute(select(User).where(User.email == admin["email"])).scalar_one()
+        admin_obj = session.execute(
+            select(User).where(User.email == admin["email"])
+        ).scalar_one()
         admin_obj.is_admin = True
         session.commit()
 
-        login = client.post("/auth/login", json={"email": admin["email"], "password": admin["password"]})
+        login = client.post(
+            "/auth/login", json={"email": admin["email"], "password": admin["password"]}
+        )
         assert login.status_code == status.HTTP_200_OK
 
         payload = {"id": 9999999, "field": "username", "value": "NoOne"}
-        resp = client.patch("/users", json=payload, cookies={"access_token": login.cookies['access_token']})
+        resp = client.patch(
+            "/users",
+            json=payload,
+            cookies={"access_token": login.cookies["access_token"]},
+        )
         assert resp.status_code == status.HTTP_404_NOT_FOUND
