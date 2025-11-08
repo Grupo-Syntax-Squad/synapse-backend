@@ -2,5 +2,12 @@ FROM python:3.11-slim
 WORKDIR /app
 COPY ./requirements.txt .
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
+
 COPY ./src ./src
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "80"]
+COPY ./alembic ./alembic
+COPY alembic.ini .
+COPY entrypoint.sh .
+
+RUN chmod +x entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]
