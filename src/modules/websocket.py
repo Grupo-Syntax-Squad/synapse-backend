@@ -33,16 +33,17 @@ class ChatWebSocketManager(WebSocketManager):
     async def send_personal_message(self, message: str, user_id: int) -> None:
         websocket = self.active_connections.get(user_id)
         if websocket:
-            await websocket.send_text(self._response_builder(message))
+            response = self._response_builder(message)
+            await websocket.send_text(response)
 
-    def _response_builder(self, text: str) -> None:
+    def _response_builder(self, text: str) -> str:
+        self._logger.debug(f"Processando mensagem: {text}")
         classifier = RuleIntentClassifier()
         try:
             intent, params = classifier.classify(text)
         except Exception as e:
             self._logger.error(f"Erro ao classificar intenção:{e}")
-            self._logger.error("Desculpe — não fui projetado para responder esse tipo de pergunta.")
-            return
+            return "Desculpe — não fui projetado para responder esse tipo de pergunta."  # ← RETORNA STRING
 
         self._logger.debug(f"Intent: {intent}")
         self._logger.debug(f"Params: {params}")
@@ -50,14 +51,13 @@ class ChatWebSocketManager(WebSocketManager):
             out = self._builder.execute(intent, params)
         except Exception as e:
             self._logger.error(f"Erro ao executar consulta: {e}")
-            self._logger.error("Desculpe — ocorreu um erro ao buscar os dados.")
-            return
+            return "Desculpe — ocorreu um erro ao buscar os dados."  # ← RETORNA STRING
 
         rg = ResponseGenerator()
         reply = rg.generate(intent, params, out)
         self._logger.info("Resposta:")
         self._logger.info(reply)
-        return reply
+        return reply 
 
 
 class NotificationWebSocketManager(WebSocketManager):

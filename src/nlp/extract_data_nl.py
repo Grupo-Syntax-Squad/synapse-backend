@@ -47,17 +47,7 @@ MONTHS_PT = {
 
 
 class RuleIntentClassifier:
-    """Rule-based intent classifier for common SQL query intents.
-
-    It returns a tuple (intent_name, params_dict). Intent names supported:
-      - total_stock
-      - distinct_products_count
-      - sku_sales_compare
-      - sku_best_month
-      - sales_time_series
-
-    The classifier extracts SKUs, months and years when possible.
-    """
+    """Rule-based intent classifier for common SQL query intents."""
 
     SKU_RE = re.compile(r"\b([sS][kK][uU][_\-]?\d+)\b")
     YEAR_RE = re.compile(r"\b(20\d{2})\b")
@@ -73,7 +63,7 @@ class RuleIntentClassifier:
         self._nlp = spacy.load("pt_core_news_sm")
 
     def classify(self, text: str) -> tuple[str, dict[str, Any]]:
-        t = text.lower()
+        t = text.lower().strip()
         doc = self._nlp(text)
 
         sku = None
@@ -92,125 +82,113 @@ class RuleIntentClassifier:
                 }
             )
 
-        # Novos padrões para previsões
-        if ("previsão" in t or "prever" in t or "tendência" in t or "vai ficar" in t or
-            "correm risco" in t or "podem acabar" in t or "risco de acabar" in t):
-            if ("estoque zero" in t or "sem estoque" in t or "acabar" in t or
-                "ficar sem" in t or "esgotar" in t):
+        print(f"DEBUG: Texto='{text}'")
+        print(f"DEBUG: SKU={sku}, Years={years}, Months={months}")
+
+        # 1. Previsões (mantém as regras específicas primeiro)
+        if any(word in t for word in ["previsão", "prever", "tendência", "vai ficar", "correm risco", "podem acabar", "risco de acabar"]):
+            if any(phrase in t for phrase in ["estoque zero", "sem estoque", "acabar", "ficar sem", "esgotar"]):
+                print("DEBUG: Intent predict_stockout")
                 return "predict_stockout", {"sku": sku} if sku else {}
 
-            if "mais" in t and ("vendido" in t or "consumido" in t):
-                period = None
+            if "mais" in t and any(word in t for word in ["vendido", "consumido"]):
+                period = "next_month"
                 if "próximo mês" in t or "mês que vem" in t:
                     period = "next_month"
                 elif "próximo ano" in t or "ano que vem" in t:
                     period = "next_year"
-                return "predict_top_sales", {"period": period or "next_month"}
+                print("DEBUG: Intent predict_top_sales")
+                return "predict_top_sales", {"period": period}
 
-            if sku and ("vendas" in t or "vender" in t):
-                period = None
+            if sku and any(word in t for word in ["vendas", "vender"]):
+                period = "next_month"
                 if "próximo mês" in t or "mês que vem" in t:
                     period = "next_month"
                 elif "próximo ano" in t or "ano que vem" in t:
                     period = "next_year"
-                return "predict_sku_sales", {
-                    "sku": sku,
-                    "period": period or "next_month",
-                }
+                print("DEBUG: Intent predict_sku_sales")
+                return "predict_sku_sales", {"sku": sku, "period": period}
 
-        # total stock
+        # 2. Consultas básicas de estoque
         if "total" in t and "estoque" in t:
+            print("DEBUG: Intent total_stock")
             return "total_stock", {}
 
-        # count active clients (more specific rule first)
-        if (
-            (
-                "quantos" in t
-                or "quantidade" in t
-                or "número de" in t
-                or "numero de" in t
-            )
-            and "clientes" in t
-            and ("ativos" in t or "ativo" in t)
-        ):
-            return "active_clients_count", {}
+        # 3. Contagens
+        if any(word in t for word in ["quantos", "quantidade", "número", "numero"]):
+            if "clientes" in t and any(word in t for word in ["ativos", "ativo"]):
+                print("DEBUG: Intent active_clients_count")
+                return "active_clients_count", {}
+            
+            if any(word in t for word in ["produtos", "skus"]) and "estoque" in t:
+                print("DEBUG: Intent distinct_products_count")
+                return "distinct_products_count", {}
 
-        if (
-            ("quantos" in t or "quantidade" in t or "numero" in t or "número" in t)
-            and ("produtos" in t or "skus" in t)
-            and "estoque" in t
-        ):
-            return "distinct_products_count", {}
-
-        # sku comparison: look for 'maior' and two dates/years
-        if ("maior" in t or "comparar" in t or "teve maior" in t) and sku:
+        # 4. Comparações de SKU
+        if any(word in t for word in ["maior", "comparar", "teve maior"]) and sku:
             params = {"sku": sku}
             if len(months) >= 2:
                 params["periods"] = months[:2]
             elif len(years) >= 2:
                 params["years"] = years[:2]
+            print("DEBUG: Intent sku_sales_compare")
             return "sku_sales_compare", params
 
-        # best month for SKU
-        if (
-            "que mes" in t or "mais vendeu" in t or "melhor mes" in t or "mês" in t
-        ) and sku:
+        # 5. Melhor mês para SKU
+        if any(phrase in t for phrase in ["que mes", "mais vendeu", "melhor mes", "melhor mês"]) and sku:
+            print("DEBUG: Intent sku_best_month")
             return "sku_best_month", {"sku": sku}
 
-        # sales between two dates / periods (months with years or years)
-        if ("entre" in t or " a " in t or "até" in t or "ate" in t) and (
-            len(months) >= 2 or len(years) >= 2
-        ):
+        # 6. Períodos específicos
+        if any(word in t for word in ["entre", " a ", "até", "ate"]) and (len(months) >= 2 or len(years) >= 2):
             if len(months) >= 2:
-                return (
-                    "sales_between_dates",
-                    {
-                        "start": months[0],
-                        "end": months[1],
-                        **({"sku": sku} if sku else {}),
-                    },
-                )
+                print("DEBUG: Intent sales_between_dates (months)")
+                return "sales_between_dates", {
+                    "start": months[0],
+                    "end": months[1],
+                    **({"sku": sku} if sku else {}),
+                }
             if len(years) >= 2:
-                return (
-                    "sales_between_dates",
-                    {
-                        "start": {"year": years[0]},
-                        "end": {"year": years[1]},
-                        **({"sku": sku} if sku else {}),
-                    },
-                )
+                print("DEBUG: Intent sales_between_dates (years)")
+                return "sales_between_dates", {
+                    "start": {"year": years[0]},
+                    "end": {"year": years[1]},
+                    **({"sku": sku} if sku else {}),
+                }
 
-        # top N SKUs
+        # 7. Top N SKUs
         mnum = self.NUMBER_RE.search(text)
-        if (
-            "top" in t or "maiores" in t or "principais" in t or "mais vendidos" in t
-        ) and (mnum or "mais vendidos" in t):
+        if any(word in t for word in ["top", "maiores", "principais", "mais vendidos"]):
             n = 10
             if mnum:
                 n = int(mnum.group(1) or mnum.group(2))
+            print("DEBUG: Intent top_n_skus")
             return "top_n_skus", {"n": int(n)}
 
-        # stock by client
+        # 8. Estoque por cliente
         if "estoque" in t and "cliente" in t:
-            # try to extract client code if present (numeric token)
             mclient = re.search(r"\b(\d{2,6})\b", text)
             client = int(mclient.group(1)) if mclient else None
+            print("DEBUG: Intent stock_by_client")
             return "stock_by_client", {**({"client": client} if client else {})}
 
-        # time series / aggregate sales by period
-        if "venda" in t or "vendas" in t or "faturamento" in t:
+        # 9. Série temporal (fallback mais genérico)
+        if any(word in t for word in ["venda", "vendas", "faturamento", "vendeu", "venderam"]):
             params = {}
             if sku:
                 params["sku"] = sku
             if months:
                 params["months"] = months
+            print("DEBUG: Intent sales_time_series")
             return "sales_time_series", params
 
-        # fallback: try to infer entity via spaCy named entities
+        # 10. Fallback com spaCy
         for ent in doc.ents:
             if ent.label_.lower() in {"product", "produto", "sku"}:
+                print("DEBUG: Intent sales_time_series (spaCy fallback)")
                 return "sales_time_series", {"sku": ent.text}
 
+        print("DEBUG: Nenhuma intent reconhecida")
         raise ValueError("Não consegui identificar a intenção do usuário")
 
 
@@ -341,49 +319,26 @@ class SQLQueryBuilder:
             table = self._find_table(["estoque", "stock", "inventory"])
             if not table:
                 raise ValueError("Tabela de estoque não encontrada")
-            # prefer model column name used in this project
-            if table == "estoque":
-                qty_col = (
-                    "es_totalestoque"
-                    if "es_totalestoque"
-                    in [c["name"] for c in self.inspector.get_columns(table)]
-                    else None
-                )
-            else:
-                qty_col = None
+            qty_col = self._find_column(
+                table, ["es_totalestoque", "quant", "qtd", "qty", "amount", "saldo"]
+            )
             if not qty_col:
-                qty_col = self._find_column(
-                    table, ["quant", "qtd", "qty", "amount", "saldo"]
-                )
-            if not qty_col:
-                raise ValueError(
-                    f"Coluna de quantidade não encontrada na tabela {table}"
-                )
+                raise ValueError(f"Coluna de quantidade não encontrada na tabela {table}")
+            
             sql = text(
                 f"select coalesce(sum({self._q(qty_col)}),0) as total from {self._q(table)}"
             )
             with self.engine.connect() as conn:
                 r = conn.execute(sql)
-                return {"total_stock": int(r.scalar() or 0)}
+                return {"total_stock": float(r.scalar() or 0)}
 
         if intent == "distinct_products_count":
             table = self._find_table(["estoque", "stock", "inventory"])
             if not table:
                 raise ValueError("Tabela de estoque não encontrada")
-            # prefer SKU column name in models
-            if table == "estoque":
-                sku_col = (
-                    "SKU"
-                    if "SKU" in [c["name"] for c in self.inspector.get_columns(table)]
-                    else None
-                )
-            else:
-                sku_col = None
-            if not sku_col:
-                sku_col = self._find_column(
-                    table,
-                    ["sku", "produto", "produto_id", "codigo", "cod_cliente", "cod"],
-                )
+            sku_col = self._find_column(
+                table, ["sku", "cod_produto", "produto", "codigo", "cod"]
+            )
             if not sku_col:
                 raise ValueError(f"Coluna SKU não encontrada na tabela {table}")
             sql = text(
@@ -393,140 +348,85 @@ class SQLQueryBuilder:
                 r = conn.execute(sql)
                 return {"distinct_products": int(r.scalar() or 0)}
 
-        if intent == "active_clients_count":
-            table = self._find_table(["clientes", "clients", "customers"])
-            if not table:
-                raise ValueError("Tabela de clientes não encontrada")
-
-            # try to find a boolean-like or status column
-            cols = self.inspector.get_columns(table)
-            col_names = [c["name"] for c in cols]
-            status_col = self._find_column(
-                table, ["ativo", "is_active", "active", "status"]
+        if intent == "sales_time_series":
+            fatur_table = self._find_table(["faturamento", "venda", "sales", "fatur"])
+            if not fatur_table:
+                raise ValueError("Tabela de faturamento/vendas não encontrada")
+            sku_col = self._find_column(
+                fatur_table, ["sku", "cod_produto", "produto", "codigo"]
             )
+            qty_col = self._find_column(
+                fatur_table, ["giro_sku_cliente", "zs_peso_liquido", "quant", "qtd", "valor"]
+            )
+            date_col = self._find_column(
+                fatur_table, ["data", "date", "mes", "periodo"]
+            )
+            
+            if not sku_col:
+                raise ValueError("Coluna SKU não encontrada na tabela de faturamento")
+            if not qty_col:
+                raise ValueError("Coluna de quantidade não encontrada na tabela de faturamento")
+            if not date_col:
+                raise ValueError("Coluna de data não encontrada na tabela de faturamento")
 
-            # if no status column, try common boolean column names or fall back
-            if not status_col:
-                for cand in ["is_active", "ativo", "active"]:
-                    if cand in col_names:
-                        status_col = cand
-                        break
-
-            # If still not found, return a clarification response instead of guessing
-            if not status_col:
-                # no status column; fallback to counting all clients
-                sql_all = text(f"select count(*) as count from {self._q(table)}")
-                with self.engine.connect() as conn:
-                    rall = conn.execute(sql_all)
-                    return {
-                        "active_clients": int(rall.scalar() or 0),
-                        "note": "Nenhuma coluna de status encontrada; retornando contagem total de clientes.",
-                    }
-
-            # Determine active value type: boolean vs text vs int
-            col_meta = next((c for c in cols if c["name"] == status_col), None)
-            # Heuristics: if column is boolean-like, query TRUE; if text, look for 'ativo' or 'A'
-            type_name = type(col_meta.get("type")).__name__.lower() if col_meta else ""
-            if "bool" in type_name:
-                active_value = True
-            else:
-                # try textual value 'ativo' or 'A' as common possibilities
-                active_value = "ativo"
-
+            bind = {}
+            where = []
+            if params.get("sku"):
+                where.append(f"{self._q(sku_col)} = :sku")
+                bind["sku"] = params["sku"]
+                
             sql = text(
-                f"select count(*) as count from {self._q(table)} where {self._q(status_col)} = :status"
+                f"""
+                select extract(year from {self._q(date_col)}) as year, 
+                       extract(month from {self._q(date_col)}) as month, 
+                       coalesce(sum({self._q(qty_col)}),0) as total 
+                from {self._q(fatur_table)} 
+                """ + ("where " + " and ".join(where) if where else "") + """
+                group by year, month 
+                order by year, month
+                """
             )
+            
             with self.engine.connect() as conn:
-                r = conn.execute(sql, {"status": active_value})
-                return {"active_clients": int(r.scalar() or 0)}
+                res = conn.execute(sql, bind).fetchall()
+                return [
+                    dict(year=int(r.year), month=int(r.month), total=float(r.total))
+                    for r in res
+                ]
 
         if intent == "sku_sales_compare":
             fatur_table = self._find_table(["faturamento", "venda", "sales", "fatur"])
             if not fatur_table:
                 raise ValueError("Tabela de faturamento/vendas não encontrada")
-            # prefer model-specific names in faturamento
-            cols = [c["name"] for c in self.inspector.get_columns(fatur_table)]
-            sku_col = (
-                "SKU"
-                if "SKU" in cols
-                else self._find_column(
-                    fatur_table, ["sku", "produto", "codigo", "cod", "cod_produto"]
-                )
+            
+            sku_col = self._find_column(
+                fatur_table, ["sku", "cod_produto", "produto", "codigo"]
             )
-            qty_col = (
-                "giro_sku_cliente"
-                if "giro_sku_cliente" in cols
-                else self._find_column(
-                    fatur_table, ["quant", "qtd", "qty", "amount", "valor", "giro"]
-                )
+            qty_col = self._find_column(
+                fatur_table, ["giro_sku_cliente", "zs_peso_liquido", "quant", "qtd", "valor"]
             )
-            date_col = (
-                "data"
-                if "data" in cols
-                else self._find_column(fatur_table, ["data", "date", "mes", "periodo"])
+            date_col = self._find_column(
+                fatur_table, ["data", "date", "mes", "periodo"]
             )
+            
             if not sku_col or not qty_col:
-                raise ValueError(
-                    "Colunas SKU ou quantidade não encontradas em faturamento"
-                )
+                raise ValueError("Colunas SKU ou quantidade não encontradas em faturamento")
 
             sku = params.get("sku")
-            # compare two periods supplied as months or years
-            if params.get("periods"):
-                p1, p2 = params["periods"]
-                sql_tmpl = (
-                    f"select coalesce(sum({self._q(qty_col)}),0) as total from {self._q(fatur_table)} "
-                    f"where {self._q(sku_col)} = :sku and extract(month from {self._q(date_col)}) = :m and extract(year from {self._q(date_col)}) = :y"
-                )
-                with self.engine.connect() as conn:
-                    r1 = conn.execute(
-                        text(sql_tmpl), {"sku": sku, "m": p1["month"], "y": p1["year"]}
-                    ).scalar()
-                    r2 = conn.execute(
-                        text(sql_tmpl), {"sku": sku, "m": p2["month"], "y": p2["year"]}
-                    ).scalar()
-                return {"sku": sku, "period1": int(r1 or 0), "period2": int(r2 or 0)}
-
-            if params.get("years"):
-                y1, y2 = params["years"]
-                sql_tmpl = (
-                    f"select coalesce(sum({self._q(qty_col)}),0) as total from {self._q(fatur_table)} "
-                    f"where {self._q(sku_col)} = :sku and extract(year from {self._q(date_col)}) = :y"
-                )
-                with self.engine.connect() as conn:
-                    r1 = conn.execute(
-                        text(sql_tmpl), {"sku": sku, "y": int(y1)}
-                    ).scalar()
-                    r2 = conn.execute(
-                        text(sql_tmpl), {"sku": sku, "y": int(y2)}
-                    ).scalar()
-                return {"sku": sku, "year1": int(r1 or 0), "year2": int(r2 or 0)}
-
-            raise ValueError("Períodos para comparação não fornecidos")
 
         if intent == "sku_best_month":
             fatur_table = self._find_table(["faturamento", "venda", "sales", "fatur"])
             if not fatur_table:
                 raise ValueError("Tabela de faturamento/vendas não encontrada")
-            cols = [c["name"] for c in self.inspector.get_columns(fatur_table)]
-            sku_col = (
-                "SKU"
-                if "SKU" in cols
-                else self._find_column(
-                    fatur_table, ["sku", "produto", "codigo", "cod", "cod_produto"]
-                )
+            
+            sku_col = self._find_column(
+                fatur_table, ["sku", "cod_produto", "produto", "codigo"]
             )
-            qty_col = (
-                "giro_sku_cliente"
-                if "giro_sku_cliente" in cols
-                else self._find_column(
-                    fatur_table, ["quant", "qtd", "qty", "amount", "valor", "giro"]
-                )
+            qty_col = self._find_column(
+                fatur_table, ["giro_sku_cliente", "zs_peso_liquido", "quant", "qtd", "valor"]
             )
-            date_col = (
-                "data"
-                if "data" in cols
-                else self._find_column(fatur_table, ["data", "date", "mes", "periodo"])
+            date_col = self._find_column(
+                fatur_table, ["data", "date", "mes", "periodo"]
             )
             sku = params.get("sku")
             sql = text(
