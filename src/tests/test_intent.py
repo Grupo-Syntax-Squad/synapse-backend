@@ -1,11 +1,9 @@
 from typing import Any
 from unittest.mock import Mock
 
-from src.nlp.extract_data_nl import (
-    ResponseGenerator,
-    RuleIntentClassifier,
-    SQLQueryBuilder,
-)
+from src.nlp.intent_classifier import RuleIntentClassifier
+from src.nlp.sql_query_builder import SQLQueryBuilder
+from src.nlp.response_generator import ResponseGenerator
 
 
 class TestGreetingsFarewells:

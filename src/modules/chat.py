@@ -59,7 +59,6 @@ class ChatHistoryGetter:
                 ).where(ChatHistory.user_id == user.id)
             )
         ).fetchall()
-        self._log.debug(f"{chat_history}")
         return [ChatHistoryResponse(**chat._asdict()) for chat in chat_history]
 
 

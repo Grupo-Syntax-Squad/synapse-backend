@@ -31,7 +31,7 @@ class EmailBuilder:
 
     def _load_html_template(self) -> Template:
         try:
-            with open(self._template_path, "r") as template_file:
+            with open(self._template_path, "r", encoding="utf-8") as template_file:
                 content = template_file.read()
             return Template(content)
         except Exception as e:
