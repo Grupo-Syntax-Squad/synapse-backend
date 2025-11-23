@@ -110,7 +110,7 @@ class Estoque(Base):  # type: ignore[valid-type, misc]
     produto: Mapped[str] = mapped_column(String(100))
     grupo_mercadoria: Mapped[str] = mapped_column(String(100))
     es_totalestoque: Mapped[float] = mapped_column(Numeric)
-    SKU: Mapped[str] = mapped_column(String(50))
+    sku: Mapped[str] = mapped_column(String(50))
 
 
 class Faturamento(Base):  # type: ignore[valid-type, misc]
@@ -129,7 +129,7 @@ class Faturamento(Base):  # type: ignore[valid-type, misc]
     zs_uf: Mapped[str] = mapped_column(String(10))
     zs_peso_liquido: Mapped[float] = mapped_column(Numeric)
     giro_sku_cliente: Mapped[float] = mapped_column(Numeric)
-    SKU: Mapped[str] = mapped_column(String(50))
+    sku: Mapped[str] = mapped_column(String(50))
 
 
 class ChatHistory(Base):  # type: ignore[valid-type, misc]

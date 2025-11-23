@@ -1,7 +1,7 @@
 import asyncio
-from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore[import-untyped]
-from apscheduler.triggers.interval import IntervalTrigger  # type: ignore[import-untyped]
-from apscheduler.job import Job  # type: ignore[import-untyped]
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.job import Job
 from datetime import datetime, timezone
 
 from src.logger_instance import logger
@@ -9,7 +9,7 @@ from src.modules.report import ReportWorkflow
 from src.settings import settings
 
 scheduler = AsyncIOScheduler(event_loop=asyncio.get_event_loop())
-job: Job | None = None  # type: ignore[no-any-unimported]
+job: Job | None = None
 
 
 async def generate_report_job() -> None:
