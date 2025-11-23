@@ -1,4 +1,5 @@
 import hashlib
+from typing import Optional
 import joblib
 import pandas as pd
 from pathlib import Path
@@ -29,7 +30,7 @@ def get_forecast_path(sku: str, data_hash: str, horizon: int) -> Path:
     return FORECAST_DIR / f"{safe_sku}_{data_hash}_{horizon}.pkl"
 
 
-def load_cached_model(sku: str, df_hash: str):
+def load_cached_model(sku: str, df_hash: str) -> Optional[Prophet]:
     path = get_model_path(sku, df_hash)
     if path.exists():
         with open(path, "rb") as f:
@@ -37,20 +38,20 @@ def load_cached_model(sku: str, df_hash: str):
     return None
 
 
-def save_model(model: Prophet, sku: str, df_hash: str):
+def save_model(model: Prophet, sku: str, df_hash: str) -> None:
     path = get_model_path(sku, df_hash)
     with open(path, "wb") as f:
         pickle.dump(model, f)
 
 
-def load_cached_forecast(sku: str, df_hash: str, horizon: int):
+def load_cached_forecast(sku: str, df_hash: str, horizon: int) -> Optional[pd.DataFrame]:
     path = get_forecast_path(sku, df_hash, horizon)
     if path.exists():
         return joblib.load(path)
     return None
 
 
-def save_forecast(forecast, sku: str, df_hash: str, horizon: int):
+def save_forecast(forecast: pd.DataFrame, sku: str, df_hash: str, horizon: int) -> None:
     path = get_forecast_path(sku, df_hash, horizon)
     joblib.dump(forecast, path)
 

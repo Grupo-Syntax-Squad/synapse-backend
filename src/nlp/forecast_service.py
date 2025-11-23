@@ -1,26 +1,28 @@
+from typing import Any
 import pandas as pd
 from sqlalchemy import Engine
 from src.logger_instance import logger
 from src.nlp.prophet_forecast import ProphetForecast
 from src.nlp.sql_utils import SQLUtils
 
+
 class ForecastService(SQLUtils):
     def __init__(self, engine: Engine):
         super().__init__(engine)
         self.prophet = ProphetForecast()
 
-    def handle_forecast_intent(self, intent: str, params: dict):
-        if intent not in ["predict_stockout","predict_top_sales","predict_sku_sales"]:
+    def handle_forecast_intent(self, intent: str, params: dict[str, Any]) -> dict[str, Any]:
+        if intent not in ["predict_stockout", "predict_top_sales", "predict_sku_sales"]:
             raise ValueError(f"Intent '{intent}' não suportada")
 
-        fatur_table = self._find_table(["faturamento","venda","sales","fatur"])
+        fatur_table = self._find_table(["faturamento", "venda", "sales", "fatur"])
         if not fatur_table:
             raise ValueError("Tabela de faturamento/vendas não encontrada")
 
         cols = [c["name"] for c in self.inspector.get_columns(fatur_table)]
-        sku_col = "SKU" if "SKU" in cols else self._find_column(fatur_table, ["sku","produto","codigo","cod","cod_produto"])
-        qty_col = "giro_sku_cliente" if "giro_sku_cliente" in cols else self._find_column(fatur_table, ["quant","qtd","qty","amount","valor","giro"])
-        date_col = "data" if "data" in cols else self._find_column(fatur_table, ["data","date","mes","periodo"])
+        sku_col = "SKU" if "SKU" in cols else self._find_column(fatur_table, ["sku", "produto", "codigo", "cod", "cod_produto"])
+        qty_col = "giro_sku_cliente" if "giro_sku_cliente" in cols else self._find_column(fatur_table, ["quant", "qtd", "qty", "amount", "valor", "giro"])
+        date_col = "data" if "data" in cols else self._find_column(fatur_table, ["data", "date", "mes", "periodo"])
         if not sku_col or not qty_col or not date_col:
             raise ValueError("Colunas necessárias (SKU, quantidade, data) não encontradas na tabela de faturamento")
 
@@ -45,7 +47,7 @@ class ForecastService(SQLUtils):
         """
         df = pd.DataFrame(self.execute_query(sql))
         if df.empty:
-            return {"error":"Não há dados históricos suficientes para fazer previsões"}
+            return {"error": "Não há dados históricos suficientes para fazer previsões"}
 
         df = df.rename(columns={sku_col: "sku", qty_col: "y", date_col: "ds"})
 
@@ -59,20 +61,24 @@ class ForecastService(SQLUtils):
 
         elif intent == "predict_sku_sales":
             sku = params.get("sku")
+            if not isinstance(sku, str):
+                return {"error": "SKU inválido"}
             period = params.get("period", "next_month")
             periods = 30 if period == "next_month" else 365
             return self._predict_sku_sales(df, sku, periods)
+        return {}
 
-    def _predict_stockout(self, df: pd.DataFrame):
+    def _predict_stockout(self, df: pd.DataFrame) -> dict[str, Any]:
         results = []
         for sku, sku_df in df.groupby("sku"):
             try:
                 sku_df = self._clean_outliers(sku_df)
                 if len(sku_df) < 2: 
                     continue
-                forecast = self.prophet.run_prophet(sku, sku_df, periods=30)
+                forecast = self.prophet.run_prophet(sku, sku_df, 30)
+                assert isinstance(forecast, pd.DataFrame)
                 last_values = forecast.tail(7)["yhat"]
-                if last_values.min() <= 0 or last_values.mean() < sku_df["y"].mean()*0.2:
+                if last_values.min() <= 0 or last_values.mean() < sku_df["y"].mean() * 0.2:
                     zero_date = forecast.loc[forecast["yhat"].idxmin(), "ds"]
                     results.append({
                         "sku": sku,
@@ -85,7 +91,7 @@ class ForecastService(SQLUtils):
         results.sort(key=lambda x: x["predicted_stockout"])
         return {"predictions": results}
 
-    def _predict_top_sales(self, df: pd.DataFrame, periods: int):
+    def _predict_top_sales(self, df: pd.DataFrame, periods: int) -> dict[str, Any]:
         results = []
         for sku, sku_df in df.groupby("sku"):
             try:
@@ -93,6 +99,7 @@ class ForecastService(SQLUtils):
                 if len(sku_df) < 2:
                     continue
                 forecast = self.prophet.run_prophet(sku, sku_df, periods)
+                assert isinstance(forecast, pd.DataFrame)
                 last_values = forecast.tail(periods)["yhat"]
                 avg_forecast = last_values.mean()
                 current_avg = sku_df["y"].mean()
@@ -112,7 +119,7 @@ class ForecastService(SQLUtils):
         results.sort(key=lambda x: x["predicted_sales"], reverse=True)
         return {"predictions": results[:5]}
 
-    def _predict_sku_sales(self, df: pd.DataFrame, sku: str, periods: int):
+    def _predict_sku_sales(self, df: pd.DataFrame, sku: str, periods: int) -> dict[str, Any]:
         sku_df = df[df["sku"].str.upper() == sku]
         if sku_df.empty:
             return {"error": f"Não há dados históricos para o SKU {sku}"}
@@ -121,6 +128,7 @@ class ForecastService(SQLUtils):
             if len(sku_df) < 2:
                 return {"error": f"Dados insuficientes para o SKU {sku}"}
             forecast = self.prophet.run_prophet(sku, sku_df, periods)
+            assert isinstance(forecast, pd.DataFrame)
             last_predictions = forecast.tail(periods)
             current_avg = float(sku_df["y"].mean())
             predicted_avg = float(last_predictions["yhat"].mean())
@@ -146,4 +154,4 @@ class ForecastService(SQLUtils):
         Q1 = sku_df["y"].quantile(0.25)
         Q3 = sku_df["y"].quantile(0.75)
         IQR = Q3 - Q1
-        return sku_df[(sku_df["y"] >= Q1-1.5*IQR) & (sku_df["y"] <= Q3+1.5*IQR)]
+        return sku_df[(sku_df["y"] >= Q1 - 1.5 * IQR) & (sku_df["y"] <= Q3 + 1.5 * IQR)]

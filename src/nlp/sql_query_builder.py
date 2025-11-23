@@ -1,12 +1,10 @@
 import pandas as pd
 from datetime import datetime
-from typing import Any, Callable
-from prophet import Prophet  # type: ignore[import-untyped]
+from typing import Any
+from prophet import Prophet
 from sqlalchemy import Engine, inspect, text
 
-from src.logger_instance import logger
 from src.nlp.forecast_service import ForecastService
-
 
 
 class SQLQueryBuilder:
@@ -472,7 +470,7 @@ class SQLQueryBuilder:
                 r = conn.execute(sql, bind).scalar()  # type: ignore[assignment]
                 return {"total_stock_client": int(r or 0), "filters": bind}  # type: ignore[arg-type]
 
-        if intent in ["predict_stockout","predict_top_sales","predict_sku_sales"]:
+        if intent in ["predict_stockout", "predict_top_sales", "predict_sku_sales"]:
             forecast_service = ForecastService(self.engine)
             result = forecast_service.handle_forecast_intent(intent, params)
             return result

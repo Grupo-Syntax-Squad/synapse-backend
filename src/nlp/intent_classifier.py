@@ -1,6 +1,6 @@
 import re
 import unidecode
-from typing import Any, Dict, Tuple, List, Optional
+from typing import Any, Dict, Tuple, Optional
 
 import spacy
 from src.logger_instance import logger
@@ -47,7 +47,6 @@ class RuleIntentClassifier:
         r"(janeiro|fevereiro|mar[cç]o|marco|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)\s*(?:de\s*)?(20\d{2})",
         re.I,
     )
-
 
     VOCABULARY = {
         "greeting": ["tudo bem", "bom dia", "boa tarde", "boa noite", "como vai", "oi", "olá", "ola", "eae", "hey", "fala", "salve", "iai"],
@@ -185,7 +184,7 @@ class RuleIntentClassifier:
                     for intent, exs in self.INTENT_EXAMPLES.items()
                 }
             except Exception as e:
-                logger.warning("Embedding model not available, semantic fallback disabled: %s", e)
+                logger.warning(f"Embedding model not available, semantic fallback disabled: {e}")
                 self.use_embeddings = False
 
     def _normalize(self, text: str) -> str:
@@ -273,7 +272,7 @@ class RuleIntentClassifier:
         mnum = self.NUMBER_RE.search(text_norm)
         n = int(mnum.group(1) or mnum.group(2)) if mnum else None
 
-        client = None
+        client: int | str | None = None
         client_match = re.search(r"(?:cliente|client)\s*[:#]?\s*([A-Za-z0-9\-_ &]+)", text_norm, re.I)
         if client_match:
             client_raw = client_match.group(1).strip()

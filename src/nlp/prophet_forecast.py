@@ -15,7 +15,7 @@ class ProphetForecast:
     def __init__(self, max_workers: int = 4):
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
 
-    def run_prophet(self, sku: str, df: pd.DataFrame, horizon: int):
+    def run_prophet(self, sku: str, df: pd.DataFrame, horizon: int) -> pd.DataFrame | None:
         if df.empty or len(df) < 2:
             return None
 
@@ -37,7 +37,7 @@ class ProphetForecast:
 
         return forecast
 
-    def predict_async(self, sku: str, sku_df: pd.DataFrame, periods: int):
+    def predict_async(self, sku: str, sku_df: pd.DataFrame, periods: int) -> tuple[str, pd.DataFrame, pd.DataFrame | None, Exception | None]:
         try:
             forecast = self.run_prophet(sku, sku_df, periods)
             return sku, sku_df, forecast, None
