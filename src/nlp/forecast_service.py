@@ -11,7 +11,9 @@ class ForecastService(SQLUtils):
         super().__init__(engine)
         self.prophet = ProphetForecast()
 
-    def handle_forecast_intent(self, intent: str, params: dict[str, Any]) -> dict[str, Any]:
+    def handle_forecast_intent(
+        self, intent: str, params: dict[str, Any]
+    ) -> dict[str, Any]:
         if intent not in ["predict_stockout", "predict_top_sales", "predict_sku_sales"]:
             raise ValueError(f"Intent '{intent}' não suportada")
 
@@ -20,11 +22,29 @@ class ForecastService(SQLUtils):
             raise ValueError("Tabela de faturamento/vendas não encontrada")
 
         cols = [c["name"] for c in self.inspector.get_columns(fatur_table)]
-        sku_col = "SKU" if "SKU" in cols else self._find_column(fatur_table, ["sku", "produto", "codigo", "cod", "cod_produto"])
-        qty_col = "giro_sku_cliente" if "giro_sku_cliente" in cols else self._find_column(fatur_table, ["quant", "qtd", "qty", "amount", "valor", "giro"])
-        date_col = "data" if "data" in cols else self._find_column(fatur_table, ["data", "date", "mes", "periodo"])
+        sku_col = (
+            "SKU"
+            if "SKU" in cols
+            else self._find_column(
+                fatur_table, ["sku", "produto", "codigo", "cod", "cod_produto"]
+            )
+        )
+        qty_col = (
+            "giro_sku_cliente"
+            if "giro_sku_cliente" in cols
+            else self._find_column(
+                fatur_table, ["quant", "qtd", "qty", "amount", "valor", "giro"]
+            )
+        )
+        date_col = (
+            "data"
+            if "data" in cols
+            else self._find_column(fatur_table, ["data", "date", "mes", "periodo"])
+        )
         if not sku_col or not qty_col or not date_col:
-            raise ValueError("Colunas necessárias (SKU, quantidade, data) não encontradas na tabela de faturamento")
+            raise ValueError(
+                "Colunas necessárias (SKU, quantidade, data) não encontradas na tabela de faturamento"
+            )
 
         sql = f"""
         WITH daily_sales AS (
@@ -73,19 +93,24 @@ class ForecastService(SQLUtils):
         for sku, sku_df in df.groupby("sku"):
             try:
                 sku_df = self._clean_outliers(sku_df)
-                if len(sku_df) < 2: 
+                if len(sku_df) < 2:
                     continue
                 forecast = self.prophet.run_prophet(sku, sku_df, 30)
                 assert isinstance(forecast, pd.DataFrame)
                 last_values = forecast.tail(7)["yhat"]
-                if last_values.min() <= 0 or last_values.mean() < sku_df["y"].mean() * 0.2:
+                if (
+                    last_values.min() <= 0
+                    or last_values.mean() < sku_df["y"].mean() * 0.2
+                ):
                     zero_date = forecast.loc[forecast["yhat"].idxmin(), "ds"]
-                    results.append({
-                        "sku": sku,
-                        "predicted_stockout": zero_date,
-                        "current_avg": float(sku_df["y"].mean()),
-                        "predicted_avg": float(last_values.mean())
-                    })
+                    results.append(
+                        {
+                            "sku": sku,
+                            "predicted_stockout": zero_date,
+                            "current_avg": float(sku_df["y"].mean()),
+                            "predicted_avg": float(last_values.mean()),
+                        }
+                    )
             except Exception as e:
                 logger.error(f"Erro na previsão do SKU {sku}: {str(e)}")
         results.sort(key=lambda x: x["predicted_stockout"])
@@ -108,18 +133,22 @@ class ForecastService(SQLUtils):
                 else:
                     growth_rate = (avg_forecast / current_avg - 1) * 100
 
-                results.append({
-                    "sku": sku,
-                    "predicted_sales": float(avg_forecast),
-                    "current_avg": float(current_avg),
-                    "growth_rate": float(growth_rate)
-                })
+                results.append(
+                    {
+                        "sku": sku,
+                        "predicted_sales": float(avg_forecast),
+                        "current_avg": float(current_avg),
+                        "growth_rate": float(growth_rate),
+                    }
+                )
             except Exception as e:
                 logger.error(f"Erro na previsão do SKU {sku}: {str(e)}")
         results.sort(key=lambda x: x["predicted_sales"], reverse=True)
         return {"predictions": results[:5]}
 
-    def _predict_sku_sales(self, df: pd.DataFrame, sku: str, periods: int) -> dict[str, Any]:
+    def _predict_sku_sales(
+        self, df: pd.DataFrame, sku: str, periods: int
+    ) -> dict[str, Any]:
         sku_df = df[df["sku"].str.upper() == sku]
         if sku_df.empty:
             return {"error": f"Não há dados históricos para o SKU {sku}"}
@@ -143,8 +172,8 @@ class ForecastService(SQLUtils):
                 "growth_rate": float(growth_rate),
                 "confidence_interval": {
                     "lower": float(last_predictions["yhat_lower"].mean()),
-                    "upper": float(last_predictions["yhat_upper"].mean())
-                }
+                    "upper": float(last_predictions["yhat_upper"].mean()),
+                },
             }
         except Exception as e:
             return {"error": f"Erro ao gerar previsões para o SKU {sku}: {str(e)}"}

@@ -9,18 +9,24 @@ from src.schemas.basic_response import BasicResponse
 
 
 class VisualizeNotification:
-    def __init__(self, session: Session, notification_id: int, current_user: CurrentUser):
+    def __init__(
+        self, session: Session, notification_id: int, current_user: CurrentUser
+    ):
         self._session = session
         self._notification_id = notification_id
         self._current_user = current_user
         self._log = logger
 
     def execute(self) -> BasicResponse[None]:
-        self._log.info(f"Fetching notification ID {self._notification_id} to mark as viewed")
+        self._log.info(
+            f"Fetching notification ID {self._notification_id} to mark as viewed"
+        )
 
-        notification = self._session.query(Notification).filter(
-            Notification.id == self._notification_id
-        ).first()
+        notification = (
+            self._session.query(Notification)
+            .filter(Notification.id == self._notification_id)
+            .first()
+        )
 
         if not notification:
             self._log.warning(f"Notification ID {self._notification_id} not found")
@@ -34,6 +40,8 @@ class VisualizeNotification:
         notification.visualizedBy = self._current_user.id
 
         self._session.commit()
-        self._log.info(f"Notification ID {self._notification_id} marked as viewed by user {self._current_user.id}")
+        self._log.info(
+            f"Notification ID {self._notification_id} marked as viewed by user {self._current_user.id}"
+        )
 
         return BasicResponse(message="Notificação marcada como visualizada")

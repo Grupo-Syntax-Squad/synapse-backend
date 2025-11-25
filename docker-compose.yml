@@ -14,6 +14,8 @@ services:
       - ./utils:/utils
     depends_on:
       - postgres
+      - redis
+
 
   postgres:
     image: postgres:16
@@ -29,6 +31,55 @@ services:
       - ./data/postgres:/var/lib/postgresql/data # persist data outside of container
     networks:
       - monitoring-network
+
+  redis:
+    image: redis:alpine 
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - monitoring-network
+
+  # loki:
+  #   image: grafana/loki:latest
+  #   container_name: loki
+  #   ports:
+  #     - "3100:3100"
+  #   networks:
+  #     - monitoring-network
+
+  # prometheus:
+  #   image: prom/prometheus:latest
+  #   container_name: prometheus
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - ./monitoring/prometheus:/etc/prometheus
+  #   command:
+  #     - "--config.file=/etc/prometheus/prometheus.yml"
+  #   networks:
+  #     - monitoring-network
+  #   depends_on:
+  #     - synapse
+
+  # grafana:
+  #   image: grafana/grafana:latest
+  #   container_name: grafana
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #     - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #   networks:
+  #     - monitoring-network
+  #   depends_on:
+  #     - prometheus
+  #     - synapse
+  #     - loki
 
 networks:
   monitoring-network:

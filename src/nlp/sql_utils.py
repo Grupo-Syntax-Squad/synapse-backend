@@ -39,17 +39,44 @@ class SQLUtils:
 
                 t = col.get("type")
                 type_name = type(t).__name__.lower() if t else ""
-                if lcand in {"sku", "produto", "produto_id", "cod_produto", "codigo", "cod"}:
-                    if "char" in type_name or "string" in type_name or "varchar" in type_name:
+                if lcand in {
+                    "sku",
+                    "produto",
+                    "produto_id",
+                    "cod_produto",
+                    "codigo",
+                    "cod",
+                }:
+                    if (
+                        "char" in type_name
+                        or "string" in type_name
+                        or "varchar" in type_name
+                    ):
                         score += 20
-                if lcand in {"quant", "qtd", "qty", "amount", "valor", "es_totalestoque", "giro_sku_cliente", "zs_peso_liquido"}:
-                    if "numeric" in type_name or "integer" in type_name or "float" in type_name or "decimal" in type_name:
+                if lcand in {
+                    "quant",
+                    "qtd",
+                    "qty",
+                    "amount",
+                    "valor",
+                    "es_totalestoque",
+                    "giro_sku_cliente",
+                    "zs_peso_liquido",
+                }:
+                    if (
+                        "numeric" in type_name
+                        or "integer" in type_name
+                        or "float" in type_name
+                        or "decimal" in type_name
+                    ):
                         score += 20
 
                 if score > best[0]:
                     best = (score, name)
         return best[1]
 
-    def execute_query(self, sql: str, bind: dict[str, object] | None = None) -> Sequence[Row[Any]]:
+    def execute_query(
+        self, sql: str, bind: dict[str, object] | None = None
+    ) -> Sequence[Row[Any]]:
         with self.engine.connect() as conn:
             return conn.execute(text(sql), bind or {}).fetchall()

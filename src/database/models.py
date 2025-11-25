@@ -47,13 +47,17 @@ class Notification(Base):  # type: ignore[valid-type, misc]
     __tablename__ = "notification"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    type: Mapped[NotificationType] = mapped_column(SQLEnum(NotificationType), nullable=False)
-    message: Mapped[str] = mapped_column(String, nullable=False)  
+    type: Mapped[NotificationType] = mapped_column(
+        SQLEnum(NotificationType), nullable=False
+    )
+    message: Mapped[str] = mapped_column(String, nullable=False)
     details: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     visualized: Mapped[bool] = mapped_column(Boolean, server_default=text("FALSE"))
     visualizedAt: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
-    visualizedBy: Mapped[int | None] = mapped_column(Integer, ForeignKey("user.id"), nullable=True)
+    visualizedBy: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("user.id"), nullable=True
+    )
 
 
 class Report(Base):  # type: ignore[valid-type, misc]

@@ -7,7 +7,7 @@ from src.prophet_cache import (
     save_model,
     load_cached_forecast,
     save_forecast,
-    train_prophet_model
+    train_prophet_model,
 )
 
 
@@ -15,7 +15,9 @@ class ProphetForecast:
     def __init__(self, max_workers: int = 4):
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
 
-    def run_prophet(self, sku: str, df: pd.DataFrame, horizon: int) -> pd.DataFrame | None:
+    def run_prophet(
+        self, sku: str, df: pd.DataFrame, horizon: int
+    ) -> pd.DataFrame | None:
         if df.empty or len(df) < 2:
             return None
 
@@ -37,7 +39,9 @@ class ProphetForecast:
 
         return forecast
 
-    def predict_async(self, sku: str, sku_df: pd.DataFrame, periods: int) -> tuple[str, pd.DataFrame, pd.DataFrame | None, Exception | None]:
+    def predict_async(
+        self, sku: str, sku_df: pd.DataFrame, periods: int
+    ) -> tuple[str, pd.DataFrame, pd.DataFrame | None, Exception | None]:
         try:
             forecast = self.run_prophet(sku, sku_df, periods)
             return sku, sku_df, forecast, None

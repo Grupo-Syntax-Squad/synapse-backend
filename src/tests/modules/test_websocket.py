@@ -20,8 +20,10 @@ def mock_user(monkeypatch: MonkeyPatch) -> Callable[[Any], Any]:
     def _mock(user: DummyUser) -> Any:
         async def fake_get_current_user(*args: Any, **kwargs: Any) -> Any:
             return user
+
         monkeypatch.setattr(Auth, "get_current_user", fake_get_current_user)
         return user
+
     return _mock
 
 
@@ -31,9 +33,10 @@ def client() -> TestClient:
 
 
 @pytest.fixture(autouse=True)
-def override_auth() ->  Generator[None, None, None]:
+def override_auth() -> Generator[None, None, None]:
     def fake_user() -> DummyUser:
         return DummyUser(1, "user1")
+
     app.dependency_overrides[Auth.get_current_user] = fake_user
     yield
     app.dependency_overrides = {}
@@ -61,7 +64,9 @@ class TestWebSockets:
             assert ws is not None
         app.dependency_overrides = {}
 
-    def test_notification_non_admin_denied(self, client: TestClient, mock_user: Callable[[DummyUser], DummyUser]) -> None:
+    def test_notification_non_admin_denied(
+        self, client: TestClient, mock_user: Callable[[DummyUser], DummyUser]
+    ) -> None:
         client.cookies.set("access_token", "fake_token")
 
         async def fake_get_current_user() -> DummyUser:
@@ -75,7 +80,9 @@ class TestWebSockets:
         assert exc_info.value.reason == "Access denied"
         app.dependency_overrides = {}
 
-    def test_multiple_chat_clients(self, client: TestClient, mock_user: Callable[[DummyUser], DummyUser]) -> None:
+    def test_multiple_chat_clients(
+        self, client: TestClient, mock_user: Callable[[DummyUser], DummyUser]
+    ) -> None:
         client.cookies.set("access_token", "fake_token")
 
         users = [mock_user(DummyUser(i, f"user{i}")) for i in range(3)]
@@ -86,7 +93,9 @@ class TestWebSockets:
                 response = ws.receive_text()
                 assert response == f"Reply: Message {i}"
 
-    def test_disconnect_handling(self, client: TestClient, mock_user: Callable[[DummyUser], DummyUser]) -> None:
+    def test_disconnect_handling(
+        self, client: TestClient, mock_user: Callable[[DummyUser], DummyUser]
+    ) -> None:
         client.cookies.set("access_token", "fake_token")
         mock_user(DummyUser(10, "disconnect_user"))
 

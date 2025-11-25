@@ -87,7 +87,7 @@ class NotificationSchema(BaseModel):
 class NotificationWebSocketManager(WebSocketManager):
     def is_connected(self) -> bool:
         return len(self.active_connections) > 0
-    
+
     async def send_global_message(self, message: str) -> None:
         payload = self._generic_to_schema(message).model_dump_json()
 
@@ -100,7 +100,7 @@ class NotificationWebSocketManager(WebSocketManager):
                     continue
                 await connection.send_json(payload)
             except (WebSocketDisconnect, RuntimeError) as e:
-                if isinstance(e, RuntimeError) and "Cannot call \"send\"" not in str(e):
+                if isinstance(e, RuntimeError) and 'Cannot call "send"' not in str(e):
                     raise
                 dead_connections.append(key)
 

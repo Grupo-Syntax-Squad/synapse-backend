@@ -1,10 +1,11 @@
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     TESTING: bool = Field(default=False, env=["TESTING"])  # type: ignore
     DATABASE_URL: str
+    REDIS_URL: str
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRATION_TIME_MINUTES: int
@@ -12,7 +13,7 @@ class Settings(BaseSettings):
     NO_AUTH: bool
     LOKI_ENDPOINT: str
     MAIL_USERNAME: str
-    MAIL_PASSWORD: str
+    MAIL_PASSWORD: SecretStr
     MAIL_FROM: str
     MAIL_SERVER: str = "smtp.gmail.com"
     MAIL_PORT: int = 587
@@ -21,6 +22,7 @@ class Settings(BaseSettings):
     HOST: str
     PORT: int
     EMAIL_TEMPLATE_PATH: str
+    RESET_TEMPLATE_PATH: str
     GITHUB_URL: str
     SCHEDULED_REPORT_GENERATION_MINUTES: int
     CLIENT_DATABASE_FILES_FOLDER_PATH: str

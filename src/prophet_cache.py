@@ -44,7 +44,9 @@ def save_model(model: Prophet, sku: str, df_hash: str) -> None:
         pickle.dump(model, f)
 
 
-def load_cached_forecast(sku: str, df_hash: str, horizon: int) -> Optional[pd.DataFrame]:
+def load_cached_forecast(
+    sku: str, df_hash: str, horizon: int
+) -> Optional[pd.DataFrame]:
     path = get_forecast_path(sku, df_hash, horizon)
     if path.exists():
         return joblib.load(path)

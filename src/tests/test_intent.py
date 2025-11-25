@@ -38,7 +38,7 @@ def classifier() -> RuleIntentClassifier:
         ("bom dia, tudo bem?", "greeting"),
     ],
 )
-def test_greetings(classifier, text, expected_intent) -> None:
+def test_greetings(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
     assert params == {}
@@ -73,7 +73,7 @@ def test_greetings(classifier, text, expected_intent) -> None:
         ("falou, valeu", "farewell"),
     ],
 )
-def test_farewells(classifier, text, expected_intent) -> None:
+def test_farewells(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
     assert params == {}
@@ -88,7 +88,7 @@ def test_farewells(classifier, text, expected_intent) -> None:
         ("tudo bem? quero saber sobre estoque", "greeting"),
     ],
 )
-def test_greeting_precedence(classifier, text, expected_intent) -> None:
+def test_greeting_precedence(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
 
@@ -103,7 +103,7 @@ def test_greeting_precedence(classifier, text, expected_intent) -> None:
         "notícias de hoje",
     ],
 )
-def test_unknown_intent(classifier, text) -> None:
+def test_unknown_intent(classifier, text) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "unknown"
     assert "original_text" in params
@@ -118,7 +118,7 @@ def test_unknown_intent(classifier, text) -> None:
         ("vendas do sku_123", "sales_time_series"),
     ],
 )
-def test_dont_confuse_greeting_with_other_intents(
+def test_dont_confuse_greeting_with_other_intents(  # type:ignore[no-untyped-def]
     classifier, text, expected_intent
 ) -> None:
     intent, params = classifier.execute(text)
@@ -136,7 +136,7 @@ def test_dont_confuse_greeting_with_other_intents(
         ("ObRiGaDo", "farewell"),
     ],
 )
-def test_case_insensitive(classifier, text, expected_intent) -> None:
+def test_case_insensitive(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
 
@@ -201,7 +201,7 @@ def test_case_insensitive(classifier, text, expected_intent) -> None:
         ),
     ],
 )
-def test_entity_extraction(classifier, text, expected_entities) -> None:
+def test_entity_extraction(classifier, text, expected_entities) -> None:  # type:ignore[no-untyped-def]
     entities = classifier.extract_entities(text)
     assert entities == expected_entities
 
@@ -224,7 +224,7 @@ def test_entity_extraction(classifier, text, expected_entities) -> None:
         ("total de estoque", "total_stock"),
     ],
 )
-def test_specific_intents(classifier, text, expected_intent) -> None:
+def test_specific_intents(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
 
@@ -244,7 +244,7 @@ def test_specific_intents(classifier, text, expected_intent) -> None:
         ("estoque do cliente ABC-XYZ", {"client": "ABC-XYZ"}),
     ],
 )
-def test_complex_entities(classifier, text, expected_params) -> None:
+def test_complex_entities(classifier, text, expected_params) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     for key, value in expected_params.items():
         assert params[key] == value
@@ -260,7 +260,7 @@ def test_complex_entities(classifier, text, expected_params) -> None:
         ("previsão de vendas do sku_123 e estoque total", "predict_sku_sales"),
     ],
 )
-def test_intent_priority(classifier, text, expected_intent) -> None:
+def test_intent_priority(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
 
@@ -279,7 +279,7 @@ def test_intent_priority(classifier, text, expected_intent) -> None:
         ("sku@123", "unknown"),  # formato inválido
     ],
 )
-def test_text_normalization(classifier, text, expected_intent) -> None:
+def test_text_normalization(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
 
@@ -293,7 +293,7 @@ def test_text_normalization(classifier, text, expected_intent) -> None:
         ".!@#$%",  # só caracteres especiais
     ],
 )
-def test_edge_cases(classifier, text) -> None:
+def test_edge_cases(classifier, text) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "unknown"
     assert params == {}
@@ -309,7 +309,7 @@ def test_edge_cases(classifier, text) -> None:
         # Nota: Este teste pode precisar de mock do spaCy para funcionar consistentemente
     ],
 )
-def test_spacy_ner_integration(classifier, text, expected_sku) -> None:
+def test_spacy_ner_integration(classifier, text, expected_sku) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     # O teste real dependerá de como o spaCy está configurado e treinado
     if "sku" in params:
@@ -331,7 +331,7 @@ def test_spacy_ner_integration(classifier, text, expected_sku) -> None:
         ),
     ],
 )
-def test_multiple_entities(
+def test_multiple_entities(  # type:ignore[no-untyped-def]
     classifier, text, expected_intent, expected_entities
 ) -> None:
     intent, params = classifier.execute(text)
@@ -340,7 +340,7 @@ def test_multiple_entities(
         assert params[key] == value
 
 
-def test_low_score_fallback(classifier) -> None:
+def test_low_score_fallback(classifier) -> None:  # type:ignore[no-untyped-def]
     # Texto que tem palavras relacionadas mas não forma uma intenção clara
     text = "vendas produto sku mês ano estoque cliente"
     intent, params = classifier.execute(text)
@@ -356,12 +356,12 @@ def test_low_score_fallback(classifier) -> None:
         ("obrigada pela ajuda", "farewell"),  # feminino
     ],
 )
-def test_spelling_variations(classifier, text, expected_intent) -> None:
+def test_spelling_variations(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
 
 
-def test_long_text_processing(classifier) -> None:
+def test_long_text_processing(classifier) -> None:  # type:ignore[no-untyped-def]
     long_text = """
     Bom dia, gostaria de saber a previsão de vendas do SKU_123 para o mês de março de 2024.
     Também preciso comparar com as vendas do SKU_456 e ver o estoque total disponível.
@@ -386,7 +386,7 @@ def test_long_text_processing(classifier) -> None:
         ("vai acabar o sku_333 em janeiro?", "predict_stockout", "SKU_333"),
     ],
 )
-def test_predict_stockout_with_sku(
+def test_predict_stockout_with_sku(  # type:ignore[no-untyped-def]
     classifier, text, expected_intent, expected_sku
 ) -> None:
     intent, params = classifier.execute(text)
@@ -402,7 +402,7 @@ def test_predict_stockout_with_sku(
         ("ruptura prevista para junho 2024", [{"month": 6, "year": 2024}]),
     ],
 )
-def test_predict_stockout_with_dates(classifier, text, expected_months) -> None:
+def test_predict_stockout_with_dates(classifier, text, expected_months) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "predict_stockout"
     assert params.get("months") == expected_months
@@ -427,7 +427,7 @@ def test_predict_stockout_with_dates(classifier, text, expected_months) -> None:
         ("produtos com maior venda prevista em 2025", {"type": "year", "year": 2025}),
     ],
 )
-def test_predict_top_sales_with_period(classifier, text, expected_period) -> None:
+def test_predict_top_sales_with_period(classifier, text, expected_period) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "predict_top_sales"
     assert params.get("period") == expected_period
@@ -442,7 +442,7 @@ def test_predict_top_sales_with_period(classifier, text, expected_period) -> Non
         "quais vão vender mais?",
     ],
 )
-def test_predict_top_sales_next_month(classifier, text) -> None:
+def test_predict_top_sales_next_month(classifier, text) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "predict_top_sales"
     assert params.get("period", {}).get("type") == "next_month"
@@ -473,7 +473,7 @@ def test_predict_top_sales_next_month(classifier, text) -> None:
         ),
     ],
 )
-def test_predict_sku_sales_with_date(
+def test_predict_sku_sales_with_date(  # type:ignore[no-untyped-def]
     classifier, text, expected_sku, expected_months
 ) -> None:
     intent, params = classifier.execute(text)
@@ -491,7 +491,7 @@ def test_predict_sku_sales_with_date(
         ("quanto vai vender o sku_999?", "SKU_999"),
     ],
 )
-def test_predict_sku_sales_without_date(classifier, text, expected_sku) -> None:
+def test_predict_sku_sales_without_date(classifier, text, expected_sku) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "predict_sku_sales"
     assert params.get("sku") == expected_sku
@@ -509,7 +509,7 @@ def test_predict_sku_sales_without_date(classifier, text, expected_sku) -> None:
         ("histórico mensal de vendas", "sales_time_series"),
     ],
 )
-def test_sales_time_series_general(classifier, text, expected_intent) -> None:
+def test_sales_time_series_general(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
 
@@ -525,7 +525,7 @@ def test_sales_time_series_general(classifier, text, expected_intent) -> None:
         ("histórico mensal do sku-222", "SKU_222"),
     ],
 )
-def test_sales_time_series_with_sku(classifier, text, expected_sku) -> None:
+def test_sales_time_series_with_sku(classifier, text, expected_sku) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "sales_time_series"
     assert params.get("sku") == expected_sku
@@ -539,7 +539,7 @@ def test_sales_time_series_with_sku(classifier, text, expected_sku) -> None:
         ("evolução do sku-789 de 2022 a 2024", "SKU_789", [2022, 2024]),
     ],
 )
-def test_sales_time_series_with_sku_and_years(
+def test_sales_time_series_with_sku_and_years(  # type:ignore[no-untyped-def]
     classifier, text, expected_sku, expected_years
 ) -> None:
     intent, params = classifier.execute(text)
@@ -558,7 +558,7 @@ def test_sales_time_series_with_sku_and_years(
         ("comparativo entre sku_555 e sku_666", "SKU_555"),
     ],
 )
-def test_sku_sales_compare_basic(classifier, text, expected_sku) -> None:
+def test_sku_sales_compare_basic(classifier, text, expected_sku) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "sku_sales_compare"
     assert params.get("sku") == expected_sku  # Pega o primeiro SKU
@@ -584,7 +584,7 @@ def test_sku_sales_compare_basic(classifier, text, expected_sku) -> None:
         ),
     ],
 )
-def test_sku_sales_compare_with_date(
+def test_sku_sales_compare_with_date(  # type:ignore[no-untyped-def]
     classifier, text, expected_sku, expected_months
 ) -> None:
     intent, params = classifier.execute(text)
@@ -604,7 +604,7 @@ def test_sku_sales_compare_with_date(
         ("os 7 maiores skus", 7),
     ],
 )
-def test_top_n_skus_basic(classifier, text, expected_n) -> None:
+def test_top_n_skus_basic(classifier, text, expected_n) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "top_n_skus"
     assert params.get("n") == expected_n
@@ -618,7 +618,7 @@ def test_top_n_skus_basic(classifier, text, expected_n) -> None:
         ("os 3 principais em janeiro 2024", 3, [{"month": 1, "year": 2024}]),
     ],
 )
-def test_top_n_skus_with_date(classifier, text, expected_n, expected_months) -> None:
+def test_top_n_skus_with_date(classifier, text, expected_n, expected_months) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "top_n_skus"
     assert params.get("n") == expected_n
@@ -633,7 +633,7 @@ def test_top_n_skus_with_date(classifier, text, expected_n, expected_months) -> 
         ("os 7 maiores de 2025", 7, [2025]),
     ],
 )
-def test_top_n_skus_with_years(classifier, text, expected_n, expected_years) -> None:
+def test_top_n_skus_with_years(classifier, text, expected_n, expected_years) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "top_n_skus"
     assert params.get("n") == expected_n
@@ -660,7 +660,7 @@ def test_top_n_skus_with_years(classifier, text, expected_n, expected_years) -> 
         ),
     ],
 )
-def test_sales_between_dates_months(
+def test_sales_between_dates_months(  # type:ignore[no-untyped-def]
     classifier, text, expected_start, expected_end
 ) -> None:
     intent, params = classifier.execute(text)
@@ -677,7 +677,7 @@ def test_sales_between_dates_months(
         ("quanto vendemos entre 2021 e 2025", 2021, 2025),
     ],
 )
-def test_sales_between_dates_years(
+def test_sales_between_dates_years(  # type:ignore[no-untyped-def]
     classifier, text, expected_start_year, expected_end_year
 ) -> None:
     intent, params = classifier.execute(text)
@@ -695,7 +695,7 @@ def test_sales_between_dates_years(
         ("quanto o cliente 1234 tem em estoque?", 1234),
     ],
 )
-def test_stock_by_client_numeric(classifier, text, expected_client) -> None:
+def test_stock_by_client_numeric(classifier, text, expected_client) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "stock_by_client"
     assert params.get("client") == expected_client
@@ -709,7 +709,7 @@ def test_stock_by_client_numeric(classifier, text, expected_client) -> None:
         ("estoque por cliente XYZ_123", "XYZ_123"),
     ],
 )
-def test_stock_by_client_alphanumeric(classifier, text, expected_client) -> None:
+def test_stock_by_client_alphanumeric(classifier, text, expected_client) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "stock_by_client"
     assert params.get("client") == expected_client
@@ -724,7 +724,7 @@ def test_stock_by_client_alphanumeric(classifier, text, expected_client) -> None
         ("mês que mais vendeu o sku_999", "SKU_999"),
     ],
 )
-def test_sku_best_month(classifier, text, expected_sku) -> None:
+def test_sku_best_month(classifier, text, expected_sku) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "sku_best_month"
     assert params.get("sku") == expected_sku
@@ -753,7 +753,7 @@ def test_sku_best_month(classifier, text, expected_sku) -> None:
         ),
     ],
 )
-def test_complex_greeting_with_intent(
+def test_complex_greeting_with_intent(  # type:ignore[no-untyped-def]
     classifier, text, expected_intent, expected_sku, expected_months
 ) -> None:
     intent, params = classifier.execute(text)
@@ -772,7 +772,7 @@ def test_complex_greeting_with_intent(
         ("previsão do sku_456 para janeiro 2025, até mais", "predict_sku_sales"),
     ],
 )
-def test_complex_intent_with_farewell(classifier, text, expected_intent) -> None:
+def test_complex_intent_with_farewell(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
 
@@ -785,7 +785,7 @@ def test_complex_intent_with_farewell(classifier, text, expected_intent) -> None
         "diferença entre sku_444, sku_555 e sku_666",
     ],
 )
-def test_multiple_skus_extracts_first(classifier, text) -> None:
+def test_multiple_skus_extracts_first(classifier, text) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "sku_sales_compare"
     assert params.get("sku") is not None
@@ -800,7 +800,7 @@ def test_multiple_skus_extracts_first(classifier, text) -> None:
         ("evolução em 2023", 1),
     ],
 )
-def test_multiple_years_extraction(classifier, text, expected_years_count) -> None:
+def test_multiple_years_extraction(classifier, text, expected_years_count) -> None:  # type:ignore[no-untyped-def]
     entities = classifier.extract_entities(text)
     assert len(entities["years"]) == expected_years_count
 
@@ -815,7 +815,7 @@ def test_multiple_years_extraction(classifier, text, expected_years_count) -> No
         ("vendas do skU_999", "SKU_999"),
     ],
 )
-def test_sku_format_variations(classifier, text, expected_sku) -> None:
+def test_sku_format_variations(classifier, text, expected_sku) -> None:  # type:ignore[no-untyped-def]
     entities = classifier.extract_entities(text)
     assert entities["sku"] == expected_sku
 
@@ -829,7 +829,7 @@ def test_sku_format_variations(classifier, text, expected_sku) -> None:
         ("Marco 2024", 3),  # capitalizado sem ç
     ],
 )
-def test_month_accent_variations(classifier, text, expected_month) -> None:
+def test_month_accent_variations(classifier, text, expected_month) -> None:  # type:ignore[no-untyped-def]
     entities = classifier.extract_entities(text)
     assert len(entities["months"]) == 1
     assert entities["months"][0]["month"] == expected_month
@@ -845,7 +845,7 @@ def test_month_accent_variations(classifier, text, expected_month) -> None:
         "!@#$%^&*()",
     ],
 )
-def test_empty_and_whitespace(classifier, text) -> None:
+def test_empty_and_whitespace(classifier, text) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "unknown"
     assert params == {}
@@ -858,7 +858,7 @@ def test_empty_and_whitespace(classifier, text) -> None:
         "previsão " * 100,  # palavra repetida
     ],
 )
-def test_very_long_text(classifier, text) -> None:
+def test_very_long_text(classifier, text) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     # Deve processar sem erro
     assert intent is not None
@@ -872,7 +872,7 @@ def test_very_long_text(classifier, text) -> None:
         "2024",
     ],
 )
-def test_only_numbers(classifier, text) -> None:
+def test_only_numbers(classifier, text) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == "unknown"
 
@@ -886,7 +886,7 @@ def test_only_numbers(classifier, text) -> None:
         ("total", "unknown"),  # ambíguo sem contexto
     ],
 )
-def test_ambiguous_single_words(classifier, text, expected_intent) -> None:
+def test_ambiguous_single_words(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
 
@@ -899,7 +899,7 @@ def test_ambiguous_single_words(classifier, text, expected_intent) -> None:
         ("sku_123????? vai acabar?????", "predict_stockout"),
     ],
 )
-def test_excessive_punctuation(classifier, text, expected_intent) -> None:
+def test_excessive_punctuation(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
 
@@ -912,7 +912,7 @@ def test_excessive_punctuation(classifier, text, expected_intent) -> None:
         "HiStÓrIcO dE vEnDaS",
     ],
 )
-def test_mixed_case(classifier, text) -> None:
+def test_mixed_case(classifier, text) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent != "unknown"
 
@@ -926,7 +926,7 @@ def test_mixed_case(classifier, text) -> None:
         ("total de clientes", "active_clients_count"),
     ],
 )
-def test_active_clients_count_variations(classifier, text, expected_intent) -> None:
+def test_active_clients_count_variations(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
 
@@ -940,7 +940,7 @@ def test_active_clients_count_variations(classifier, text, expected_intent) -> N
         ("quantidade de skus distintos", "distinct_products_count"),
     ],
 )
-def test_distinct_products_count_variations(classifier, text, expected_intent) -> None:
+def test_distinct_products_count_variations(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent
 
@@ -954,6 +954,6 @@ def test_distinct_products_count_variations(classifier, text, expected_intent) -
         ("quantidade total em estoque", "total_stock"),
     ],
 )
-def test_total_stock_variations(classifier, text, expected_intent) -> None:
+def test_total_stock_variations(classifier, text, expected_intent) -> None:  # type:ignore[no-untyped-def]
     intent, params = classifier.execute(text)
     assert intent == expected_intent

@@ -30,7 +30,7 @@ class SendReportToSubscribers:
         self.request = request
         self.conf = ConnectionConfig(
             MAIL_USERNAME=settings.MAIL_USERNAME,
-            MAIL_PASSWORD=SecretStr(settings.MAIL_PASSWORD),
+            MAIL_PASSWORD=SecretStr(settings.MAIL_PASSWORD),    # type: ignore[arg-type]
             MAIL_FROM=settings.MAIL_FROM,
             MAIL_PORT=settings.MAIL_PORT,
             MAIL_SERVER=settings.MAIL_SERVER,

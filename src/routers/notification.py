@@ -20,7 +20,5 @@ def visualize_notification(
 ) -> BasicResponse[None]:
     PermissionValidator(current_user).execute()
     return VisualizeNotification(
-        session=session,
-        notification_id=notification_id,
-        current_user=current_user
+        session=session, notification_id=notification_id, current_user=current_user
     ).execute()

@@ -10,9 +10,10 @@ from src.logger_instance import logger
 EMBEDDING_AVAILABLE = False
 
 # Shared, cached models to avoid reloading on every class instantiation
-_NL_PARSER = None
-_EMBEDDING_MODEL = None
-_EXAMPLES_EMB = {}
+# Use explicit annotations so static checkers know the expected types.
+_NL_PARSER: Optional[Any] = None
+_EMBEDDING_MODEL: Optional[Any] = None
+_EXAMPLES_EMB: Dict[str, Any] = {}
 
 MONTHS_PT = {
     "janeiro": 1,
@@ -55,76 +56,158 @@ class RuleIntentClassifier:
 
     INTENT_EXAMPLES = {
         "greeting": [
-            "oi", "olá", "eae", "tudo bem?", "bom dia", "boa tarde", "boa noite", "hey", "fala", "salve", "iai", "como vai", "tudo certo?", "oi, tudo bem?"
+            "oi",
+            "olá",
+            "eae",
+            "tudo bem?",
+            "bom dia",
+            "boa tarde",
+            "boa noite",
+            "hey",
+            "fala",
+            "salve",
+            "iai",
+            "como vai",
+            "tudo certo?",
+            "oi, tudo bem?",
         ],
         "farewell": [
-            "tchau", "até mais", "até logo", "valeu", "flw", "adeus", "bye", "obrigado", "obrigada", "até a próxima", "falou", "encerrar", "finalizar", "fim"
+            "tchau",
+            "até mais",
+            "até logo",
+            "valeu",
+            "flw",
+            "adeus",
+            "bye",
+            "obrigado",
+            "obrigada",
+            "até a próxima",
+            "falou",
+            "encerrar",
+            "finalizar",
+            "fim",
         ],
         "predict_stockout": [
-            "o produto vai acabar?", "tem estoque desse item?", "vai zerar o estoque?", "ficaremos sem esse produto?", 
-            "previsão de ruptura de estoque", "produto esgotando", "o estoque está baixo", "quando vai acabar o estoque?"
+            "o produto vai acabar?",
+            "tem estoque desse item?",
+            "vai zerar o estoque?",
+            "ficaremos sem esse produto?",
+            "previsão de ruptura de estoque",
+            "produto esgotando",
+            "o estoque está baixo",
+            "quando vai acabar o estoque?",
         ],
         "predict_top_sales": [
-            "quais produtos vão vender mais no próximo mês?", "previsão dos produtos mais vendidos", 
-            "top vendas no próximo mês", "quais serão os mais vendidos?", "produtos com maior venda prevista", 
-            "ranking de vendas esperado", "quais itens terão maior faturamento?", "quais produtos terão maior demanda?"
+            "quais produtos vão vender mais no próximo mês?",
+            "previsão dos produtos mais vendidos",
+            "top vendas no próximo mês",
+            "quais serão os mais vendidos?",
+            "produtos com maior venda prevista",
+            "ranking de vendas esperado",
+            "quais itens terão maior faturamento?",
+            "quais produtos terão maior demanda?",
         ],
         "predict_sku_sales": [
-            "quanto o sku vai vender no próximo mês?", "previsão de vendas do sku_10", 
-            "projeção de vendas do sku 123", "quanto vai faturar o produto sku_345?", 
-            "previsão de faturamento do sku_999", "projeção do sku_777", "quanto venderá o sku_ABC?", 
-            "quantas unidades do sku_456 serão vendidas?", "previsão de vendas do produto X"
+            "quanto o sku vai vender no próximo mês?",
+            "previsão de vendas do sku_10",
+            "projeção de vendas do sku 123",
+            "quanto vai faturar o produto sku_345?",
+            "previsão de faturamento do sku_999",
+            "projeção do sku_777",
+            "quanto venderá o sku_ABC?",
+            "quantas unidades do sku_456 serão vendidas?",
+            "previsão de vendas do produto X",
         ],
         "sales_between_dates": [
-            "quanto vendemos entre junho e agosto?", "vendas entre 01/01/2024 e 31/03/2024", 
-            "faturamento do período de março a maio", "total de vendas entre datas específicas", 
-            "quanto faturamos entre essas datas?", "vendas no trimestre passado", "quanto foi vendido no mês passado?"
+            "quanto vendemos entre junho e agosto?",
+            "vendas entre 01/01/2024 e 31/03/2024",
+            "faturamento do período de março a maio",
+            "total de vendas entre datas específicas",
+            "quanto faturamos entre essas datas?",
+            "vendas no trimestre passado",
+            "quanto foi vendido no mês passado?",
         ],
         "top_n_skus": [
-            "top 5 produtos", "quais os 10 mais vendidos?", "me mostre o top 3", "ranking dos principais produtos", 
-            "produtos mais vendidos do mês", "lista dos top skus", "quais skus tiveram maior venda?"
+            "top 5 produtos",
+            "quais os 10 mais vendidos?",
+            "me mostre o top 3",
+            "ranking dos principais produtos",
+            "produtos mais vendidos do mês",
+            "lista dos top skus",
+            "quais skus tiveram maior venda?",
         ],
         "sales_time_series": [
-            "mostrar histórico de vendas por mês", "série temporal de faturamento", "evolução de vendas mensal", 
-            "histórico mensal de faturamento", "linha do tempo das vendas", "gráfico de vendas por mês", 
-            "como as vendas evoluíram ao longo do tempo?", "histórico de faturamento ao longo do ano"
+            "mostrar histórico de vendas por mês",
+            "série temporal de faturamento",
+            "evolução de vendas mensal",
+            "histórico mensal de faturamento",
+            "linha do tempo das vendas",
+            "gráfico de vendas por mês",
+            "como as vendas evoluíram ao longo do tempo?",
+            "histórico de faturamento ao longo do ano",
         ],
         "sales_time_series_sku": [
-            "série temporal do sku_10", "histórico de vendas do sku 123", "evolução de vendas do produto X", 
-            "vendas por mês do sku_456", "faturamento por mês do sku_789", "histórico mensal do produto Y", 
-            "como as vendas do sku_ABC mudaram ao longo do tempo?"
+            "série temporal do sku_10",
+            "histórico de vendas do sku 123",
+            "evolução de vendas do produto X",
+            "vendas por mês do sku_456",
+            "faturamento por mês do sku_789",
+            "histórico mensal do produto Y",
+            "como as vendas do sku_ABC mudaram ao longo do tempo?",
         ],
         "sku_sales_compare": [
-            "comparar vendas do sku_10 com sku_20", "qual sku vendeu mais em março?", 
-            "diferença de vendas entre sku_123 e sku_456", "comparativo de vendas entre produtos", 
-            "quais skus tiveram maior venda no período?", "quem vendeu mais, sku_10 ou sku_20?", 
-            "comparar faturamento do sku_ABC com sku_DEF"
+            "comparar vendas do sku_10 com sku_20",
+            "qual sku vendeu mais em março?",
+            "diferença de vendas entre sku_123 e sku_456",
+            "comparativo de vendas entre produtos",
+            "quais skus tiveram maior venda no período?",
+            "quem vendeu mais, sku_10 ou sku_20?",
+            "comparar faturamento do sku_ABC com sku_DEF",
         ],
         "sku_best_month": [
-            "qual foi o melhor mês do sku_123?", "em que mês o produto X vendeu mais?", 
-            "melhor mês para vendas do sku_456", "histórico do mês com maior venda do produto Y", 
-            "quando o sku_789 teve maior faturamento?", "mes que mais vendeu o sku_ABC"
+            "qual foi o melhor mês do sku_123?",
+            "em que mês o produto X vendeu mais?",
+            "melhor mês para vendas do sku_456",
+            "histórico do mês com maior venda do produto Y",
+            "quando o sku_789 teve maior faturamento?",
+            "mes que mais vendeu o sku_ABC",
         ],
         "active_clients_count": [
-            "quantos clientes ativos temos?", "quantos clientes temos no total?", 
-            "quantidade de clientes ativos?", "número de clientes cadastrados", 
-            "clientes ativos no sistema", "total de clientes"
+            "quantos clientes ativos temos?",
+            "quantos clientes temos no total?",
+            "quantidade de clientes ativos?",
+            "número de clientes cadastrados",
+            "clientes ativos no sistema",
+            "total de clientes",
         ],
         "distinct_products_count": [
-            "quantos produtos distintos temos?", "skus distintos no sistema", "produtos únicos cadastrados", 
-            "quantidade de produtos diferentes", "total de skus únicos", "quantos skus diferentes existem?"
+            "quantos produtos distintos temos?",
+            "skus distintos no sistema",
+            "produtos únicos cadastrados",
+            "quantidade de produtos diferentes",
+            "total de skus únicos",
+            "quantos skus diferentes existem?",
         ],
         "stock_by_client": [
-            "estoque por cliente", "estoque do cliente X", "quanto cada cliente tem em estoque?", 
-            "quantidade de produtos por cliente", "estoque disponível por cliente", "relatório de estoque do cliente"
+            "estoque por cliente",
+            "estoque do cliente X",
+            "quanto cada cliente tem em estoque?",
+            "quantidade de produtos por cliente",
+            "estoque disponível por cliente",
+            "relatório de estoque do cliente",
         ],
         "total_stock": [
-            "estoque total", "quantidade total em estoque", "total de produtos disponíveis", 
-            "relatório do estoque geral", "quantos itens temos no estoque?"
-        ]
+            "estoque total",
+            "quantidade total em estoque",
+            "total de produtos disponíveis",
+            "relatório do estoque geral",
+            "quantos itens temos no estoque?",
+        ],
     }
 
-    def __init__(self, use_embeddings: bool = True, allow_model_download: bool = True) -> None:
+    def __init__(
+        self, use_embeddings: bool = True, allow_model_download: bool = True
+    ) -> None:
         global _NL_PARSER, _EMBEDDING_MODEL, _EXAMPLES_EMB, EMBEDDING_AVAILABLE
         if _NL_PARSER is None:
             try:
@@ -143,30 +226,42 @@ class RuleIntentClassifier:
             try:
                 # Import and cache the embedding model and embeddings to avoid re-loading
                 from sentence_transformers import SentenceTransformer, util as s_util
+
                 # If downloads are not allowed, check model exists in HF cache
                 model_name = "sentence-transformers/all-MiniLM-L6-v2"
                 model_cached = True
                 if not allow_model_download:
                     try:
                         # Try to fetch a small file from the local cache only
-                        hf_hub_download(repo_id=model_name, filename="config.json", repo_type="model", local_files_only=True)
+                        hf_hub_download(
+                            repo_id=model_name,
+                            filename="config.json",
+                            repo_type="model",
+                            local_files_only=True,
+                        )
                         model_cached = True
                     except Exception:
                         model_cached = False
 
                 if not model_cached and not allow_model_download:
-                    logger.warning("Embedding model not in local cache and model download is disabled. Semantic detection is disabled.")
+                    logger.warning(
+                        "Embedding model not in local cache and model download is disabled. Semantic detection is disabled."
+                    )
                     self.use_embeddings = False
                 else:
                     if _EMBEDDING_MODEL is None:
-                        logger.info("Loading embedding model (may download from HF). This can take a few seconds on first run.")
+                        logger.info(
+                            "Loading embedding model (may download from HF). This can take a few seconds on first run."
+                        )
                         _EMBEDDING_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
                 self.embedding_model = _EMBEDDING_MODEL
                 self._util = s_util
                 # compute per-intent mean embedding vector for faster and more stable similarity
                 if not _EXAMPLES_EMB:
                     temp = {
-                        intent: cast(Any, _EMBEDDING_MODEL).encode(exs, convert_to_tensor=True)
+                        intent: cast(Any, _EMBEDDING_MODEL).encode(
+                            exs, convert_to_tensor=True
+                        )
                         for intent, exs in self.INTENT_EXAMPLES.items()
                     }
                     # store mean vector per intent
@@ -179,9 +274,13 @@ class RuleIntentClassifier:
                         _EXAMPLES_EMB[intent] = mean_vec
                 self._examples_emb = _EXAMPLES_EMB
                 EMBEDDING_AVAILABLE = True
-                logger.info(f"Embedding model loaded: {type(self.embedding_model).__name__}; {len(self._examples_emb)} intents cached")
+                logger.info(
+                    f"Embedding model loaded: {type(self.embedding_model).__name__}; {len(self._examples_emb)} intents cached"
+                )
             except Exception as e:
-                logger.warning(f"Embedding model not available, semantic detection disabled: {e}")
+                logger.warning(
+                    f"Embedding model not available, semantic detection disabled: {e}"
+                )
                 self.use_embeddings = False
 
     def _normalize(self, text: str) -> str:
@@ -244,20 +343,22 @@ class RuleIntentClassifier:
     def detect_intent(self, text: str) -> str:
         # Only semantic transformer-based intent detection is used now.
         if not self.use_embeddings or not self.embedding_model:
-            logger.warning("Embedding model not available, returning 'unknown_intent' intent")
+            logger.warning(
+                "Embedding model not available, returning 'unknown_intent' intent"
+            )
             return "unknown_intent"
 
         best_intent, best_score, second_score = self._semantic_detect(text)
-        logger.debug(f"Semantic decision: best={best_intent} score={best_score:.3f} second={second_score:.3f}")
+        logger.debug(
+            f"Semantic decision: best={best_intent} score={best_score:.3f} second={second_score:.3f}"
+        )
         if self.use_embeddings:
             candidates = self.intent_candidates(text)
             logger.debug(f"Intent candidates (top 5): {candidates[:5]}")
-        # map aliases to canonical intent
         if best_intent:
-            best_intent = self.VOCAB_KEY_TO_INTENT.get(best_intent, best_intent)
-            return best_intent
+            canonical = self.VOCAB_KEY_TO_INTENT.get(best_intent)
+            return canonical if canonical is not None else best_intent
 
-        # If we can't detect an intent with semantic embeddings
         return "unknown_intent"
 
     def extract_entities(self, text: str) -> Dict[str, Any]:
@@ -277,7 +378,9 @@ class RuleIntentClassifier:
         n = int(mnum.group(1) or mnum.group(2)) if mnum else None
 
         client: int | str | None = None
-        client_match = re.search(r"(?:cliente|client)\s*[:#]?\s*([A-Za-z0-9\-_ &]+)", text_norm, re.I)
+        client_match = re.search(
+            r"(?:cliente|client)\s*[:#]?\s*([A-Za-z0-9\-_ &]+)", text_norm, re.I
+        )
         if client_match:
             client_raw = client_match.group(1).strip()
             if re.fullmatch(r"\d{2,6}", client_raw):
@@ -293,7 +396,7 @@ class RuleIntentClassifier:
         logger.debug(f"Detected intent (semantic): {best_intent}")
 
         entities = self.extract_entities(text)
- 
+
         try:
             if self._nlp:
                 doc = self._nlp(text)
@@ -327,12 +430,23 @@ class RuleIntentClassifier:
                 params["client"] = entities["client"]
             if best_intent == "sales_between_dates":
                 if len(entities.get("months", [])) >= 2:
-                    params.update({"start": entities["months"][0], "end": entities["months"][1]})
+                    params.update(
+                        {"start": entities["months"][0], "end": entities["months"][1]}
+                    )
                 elif len(entities.get("years", [])) >= 2:
-                    params.update({"start": {"year": entities['years'][0]}, "end": {"year": entities['years'][1]}})
+                    params.update(
+                        {
+                            "start": {"year": entities["years"][0]},
+                            "end": {"year": entities["years"][1]},
+                        }
+                    )
             if best_intent == "predict_top_sales":
                 if entities.get("months"):
-                    params["period"] = {"type": "month", "month": entities["months"][0]["month"], "year": entities["months"][0]["year"]}
+                    params["period"] = {
+                        "type": "month",
+                        "month": entities["months"][0]["month"],
+                        "year": entities["months"][0]["year"],
+                    }
                 elif entities.get("years"):
                     params["period"] = {"type": "year", "year": entities["years"][0]}
                 else:

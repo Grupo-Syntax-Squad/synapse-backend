@@ -112,7 +112,7 @@ class SQLQueryBuilder:
                 "error": "Não entendi sua pergunta",
                 "original_text": params.get("original_text", ""),
             }
-        
+
         if intent == "total_stock":
             table = self._find_table(["estoque", "stock", "inventory"])
             if not table:
@@ -476,5 +476,3 @@ class SQLQueryBuilder:
             return result
 
         raise ValueError(f"Intent '{intent}' não suportada")
-
-
