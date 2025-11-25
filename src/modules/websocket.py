@@ -2,19 +2,18 @@ from abc import ABC
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict
-from fastapi import WebSocket
+from fastapi import WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocketState
 from pydantic import BaseModel
 from sqlalchemy.engine import create_engine
 
 from src.database.models import Notification
 from src.modules.chat import ChatHistoryCreator
-from src.nlp.extract_data_nl import (
-    RuleIntentClassifier,
-    SQLQueryBuilder,
-    ResponseGenerator,
-)
+from src.nlp.sql_query_builder import SQLQueryBuilder
 from src.database.get_db import get_db
 from src.logger_instance import logger
+from src.nlp.response_generator import ResponseGenerator
+from src.nlp.intent_classifier import RuleIntentClassifier
 from src.schemas.chat import ChatRequest
 from src.settings import settings
 from src.enums.notification_type import NotificationType
@@ -86,11 +85,27 @@ class NotificationSchema(BaseModel):
 
 
 class NotificationWebSocketManager(WebSocketManager):
+    def is_connected(self) -> bool:
+        return len(self.active_connections) > 0
+
     async def send_global_message(self, message: str) -> None:
-        for connection in self.active_connections.values():
-            await connection.send_json(
-                self._generic_to_schema(message).model_dump_json()
-            )
+        payload = self._generic_to_schema(message).model_dump_json()
+
+        dead_connections = []
+
+        for key, connection in self.active_connections.items():
+            try:
+                if connection.application_state != WebSocketState.CONNECTED:
+                    dead_connections.append(key)
+                    continue
+                await connection.send_json(payload)
+            except (WebSocketDisconnect, RuntimeError) as e:
+                if isinstance(e, RuntimeError) and 'Cannot call "send"' not in str(e):
+                    raise
+                dead_connections.append(key)
+
+        for key in dead_connections:
+            self.active_connections.pop(key, None)
 
     def _generic_to_schema(self, message: str) -> NotificationSchema:
         now = datetime.now(timezone.utc)

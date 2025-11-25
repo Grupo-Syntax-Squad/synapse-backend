@@ -1,7 +1,7 @@
 import logging
 from logging import LogRecord
 from typing import Any
-from logging_loki import LokiHandler  # type: ignore[import-untyped]
+from logging_loki import LokiHandler
 import inspect
 
 from src.settings import settings

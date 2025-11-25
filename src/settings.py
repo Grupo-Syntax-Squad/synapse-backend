@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     RESET_TEMPLATE_PATH: str
     GITHUB_URL: str
     SCHEDULED_REPORT_GENERATION_MINUTES: int
+    CLIENT_DATABASE_FILES_FOLDER_PATH: str
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

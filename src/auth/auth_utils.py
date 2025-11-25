@@ -113,16 +113,16 @@ class Auth:
             key="access_token",
             value=access_token,
             httponly=True,
-            secure=False,  # mudar pra True se tiver com HTTPS
-            samesite="strict",
+            secure=True,  # mudar pra True se tiver com HTTPS
+            samesite="none",
             max_age=int(access_token_expires.total_seconds()),
         )
         response.set_cookie(
             key="refresh_token",
             value=refresh_token,
             httponly=True,
-            secure=False,
-            samesite="strict",
+            secure=True,
+            samesite="none",
             max_age=int(refresh_token_expires.total_seconds()),
         )
 

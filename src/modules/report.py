@@ -30,7 +30,7 @@ class SendReportToSubscribers:
         self.request = request
         self.conf = ConnectionConfig(
             MAIL_USERNAME=settings.MAIL_USERNAME,
-            MAIL_PASSWORD=SecretStr(settings.MAIL_PASSWORD),
+            MAIL_PASSWORD=SecretStr(settings.MAIL_PASSWORD),    # type: ignore[arg-type]
             MAIL_FROM=settings.MAIL_FROM,
             MAIL_PORT=settings.MAIL_PORT,
             MAIL_SERVER=settings.MAIL_SERVER,
@@ -296,34 +296,34 @@ class ReportGenerator:
                 "clientes_sku1": """
                     SELECT COUNT(DISTINCT cod_cliente) AS clientes
                     FROM faturamento
-                    WHERE \"SKU\" = 'SKU_1'
+                    WHERE sku = 'SKU_1'
                       AND data BETWEEN current_date - INTERVAL '364 days' AND current_date
                       AND zs_peso_liquido > 0
                 """,
                 "skus_sem_estoque": """
-                    SELECT f.\"SKU\"
+                    SELECT f.sku
                     FROM faturamento f
-                    LEFT JOIN estoque e ON e.\"SKU\" = f.\"SKU\"
+                    LEFT JOIN estoque e ON e.sku = f.sku
                     WHERE f.data BETWEEN current_date - INTERVAL '364 days' AND current_date
-                    GROUP BY f.\"SKU\", e.es_totalestoque
+                    GROUP BY f.sku, e.es_totalestoque
                     HAVING SUM(f.zs_peso_liquido) > 0 AND COALESCE(SUM(e.es_totalestoque),0) = 0
                 """,
                 "itens_repor": """
                     WITH consumo_52 AS (
-                        SELECT \"SKU\", SUM(zs_peso_liquido) AS total
+                        SELECT sku, SUM(zs_peso_liquido) AS total
                         FROM faturamento
                         WHERE data BETWEEN current_date - INTERVAL '364 days' AND current_date
-                        GROUP BY \"SKU\"
+                        GROUP BY sku
                     ),
                     estoque_agg AS (
-                        SELECT \"SKU\", SUM(es_totalestoque) AS total
+                        SELECT sku, SUM(es_totalestoque) AS total
                         FROM estoque
                         WHERE data BETWEEN current_date - INTERVAL '364 days' AND current_date
-                        GROUP BY \"SKU\"
+                        GROUP BY sku
                     )
-                    SELECT c.\"SKU\"
+                    SELECT c.sku
                     FROM consumo_52 c
-                    LEFT JOIN estoque_agg e ON e.\"SKU\" = c.\"SKU\"
+                    LEFT JOIN estoque_agg e ON e.sku = c.sku
                     WHERE (c.total/52.0) > 0
                       AND COALESCE(e.total,0) / (c.total/52.0) < 4
                 """,
@@ -331,13 +331,13 @@ class ReportGenerator:
                     WITH consumo AS (
                         SELECT SUM(zs_peso_liquido) AS total
                         FROM faturamento
-                        WHERE \"SKU\" = 'SKU_1'
+                        WHERE sku = 'SKU_1'
                           AND data BETWEEN current_date - INTERVAL '364 days' AND current_date
                     ),
                     est AS (
                         SELECT SUM(es_totalestoque) AS total
                         FROM estoque
-                        WHERE \"SKU\" = 'SKU_1'
+                        WHERE sku = 'SKU_1'
                     )
                     SELECT 
                         CASE
@@ -368,8 +368,8 @@ class ReportGenerator:
                 "freq_compra": self._build_frequency(data["frequencia_compra"]),
                 "aging_medio": data["aging"][0]["idade_media"],
                 "clientes_sku1": data["clientes_sku1"][0]["clientes"],
-                "skus_sem_estoque": [row["SKU"] for row in data["skus_sem_estoque"]],
-                "itens_repor": [row["SKU"] for row in data["itens_repor"]],
+                "skus_sem_estoque": [row["sku"] for row in data["skus_sem_estoque"]],
+                "itens_repor": [row["sku"] for row in data["itens_repor"]],
                 "risco_sku1": data["risco_sku1"][0]["risco"],
             }
             return processed
