@@ -13,6 +13,8 @@ services:
     depends_on:
       - loki
       - postgres
+      - redis
+
 
   postgres:
     image: postgres:latest
@@ -26,6 +28,15 @@ services:
       - "5432:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data # persist data outside of container
+    networks:
+      - monitoring-network
+
+  redis:
+    image: redis:alpine 
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
     networks:
       - monitoring-network
 

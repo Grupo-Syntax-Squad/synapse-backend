@@ -24,7 +24,7 @@ async def register_user(
 
 @router.get("/me")
 def me(
-    current_user: CurrentUser = Depends(Auth.get_current_user)  # type: ignore
+    current_user: CurrentUser = Depends(Auth.get_current_user),  # type: ignore
 ) -> BasicResponse[CurrentUser]:
     return BasicResponse(data=current_user, message="OK")
 
