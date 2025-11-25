@@ -46,8 +46,8 @@ class ResponseGenerator:
         original_text = params.get("original_text", "")
         responses = [
             f"Desculpe, não entendi '{original_text}'. Posso ajudar com informações sobre vendas, estoque, previsões e análises de SKU.",
-            f"Não consegui compreender '{original_text}'. Tente perguntar sobre vendas, estoque, produtos mais vendidos ou previsões.",
-            f"Minha especialidade é análise de dados comerciais. Não entendi '{original_text}'. Que tal perguntar sobre vendas ou estoque?",
+            f"Desculpe, não consegui compreender '{original_text}'. Tente perguntar sobre vendas, estoque, produtos mais vendidos ou previsões.",
+            f"Minha especialidade é análise de dados comerciais. Desculpe, não entendi '{original_text}'. Que tal perguntar sobre vendas ou estoque?",
         ]
         return random.choice(responses)
 

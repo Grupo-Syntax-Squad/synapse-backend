@@ -1,16 +1,18 @@
 import re
 import unidecode
-from typing import Any, Dict, Tuple, Optional
+from typing import Any, Dict, Tuple, Optional, cast
+from huggingface_hub import hf_hub_download
 
 import spacy
 from src.logger_instance import logger
 
-try:
-    from sentence_transformers import SentenceTransformer, util
+# default to keep static analyzers happy if import fails
+EMBEDDING_AVAILABLE = False
 
-    EMBEDDING_AVAILABLE = True
-except Exception:
-    EMBEDDING_AVAILABLE = False
+# Shared, cached models to avoid reloading on every class instantiation
+_NL_PARSER = None
+_EMBEDDING_MODEL = None
+_EXAMPLES_EMB = {}
 
 MONTHS_PT = {
     "janeiro": 1,
@@ -28,13 +30,11 @@ MONTHS_PT = {
     "dezembro": 12,
 }
 
-PHRASE_WEIGHT = 3
-WORD_WEIGHT = 1
-
 # quando usar semântica: similaridade mínima para aceitar fallback
-SEMANTIC_THRESHOLD = 0.45
+# reduced threshold slightly to avoid many unknowns in borderline cases
+SEMANTIC_THRESHOLD = 0.35
 # diferença mínima de score entre top intents para aceitar semântica
-MIN_SCORE_DELTA = 0.15
+MIN_SCORE_DELTA = 0.05
 
 
 class RuleIntentClassifier:
@@ -48,54 +48,7 @@ class RuleIntentClassifier:
         re.I,
     )
 
-    VOCABULARY = {
-        "greeting": ["tudo bem", "bom dia", "boa tarde", "boa noite", "como vai", "oi", "olá", "ola", "eae", "hey", "fala", "salve", "iai"],
-        "farewell": ["até logo", "até mais", "tchau", "valeu", "obrigado", "obrigada", "flw", "bye", "adeus"],
-        "predict_stockout": ["sem estoque", "estoque zero", "ficar sem", "vai esgotar", "vai acabar", "zerar estoque"],
-        "predict_top_sales": [
-            "serão as melhores vendas", "serao as melhores vendas",
-            "serão os mais vendidos", "serao os mais vendidos",
-            "vai vender mais", "vão vender mais", "vao vender mais",
-            "previsão de top vendas", "prever top vendas",
-            "projeção de mais vendidos", "projeção de vendas",
-            "melhores vendas para", "maiores vendas para"
-        ],
-        "predict_sku_sales": [
-            "previsão de vendas do sku", "previsao de vendas do sku",
-            "previsão do sku", "previsao do sku",
-            "projeção de vendas do sku", "projecao de vendas do sku",
-            "vai vender quanto", "quanto vai vender"
-        ],
-        "active_clients_count": ["quantos clientes", "clientes ativos", "quantidade de clientes"],
-        "distinct_products_count": [
-            "quantos produtos", "produtos distintos", "skus distintos", "produtos únicos", "skus únicos",
-            "quantidade de produtos", "produtos diferentes", "skus diferentes",
-        ],
-        "sales_between_dates": ["vendas entre", "vendeu entre", "faturamento entre", "entre"],
-        "sku_best_month": ["melhor mes", "melhor mês", "mes quem mais vendeu", "mês que mais vendeu"],
-        "stock_by_client": ["estoque por cliente", "estoque do cliente", "estoque cliente"],
-        "sku_sales_compare": [
-            "comparar vendas", "comparação de vendas", "comparar o sku", "comparar os skus",
-            "qual vendeu mais", "quem vendeu mais", "qual teve maior venda", "qual teve mais vendas",
-            "comparativo de vendas", "diferença de vendas entre",
-        ],
-        "total_stock": ["estoque total", "total de estoque"],
-        "top_n_skus": [
-            "top vendas", "top produtos", "top skus", "top mais vendidos", "ranking de vendas",
-            "ranking dos produtos", "produtos mais vendidos", "skus mais vendidos", "lista dos mais vendidos",
-        ],
-        "sales_time_series": [
-            "série temporal de vendas", "série temporal de faturamento", "gráfico de vendas por mês",
-            "histórico de vendas", "evolução das vendas", "linha do tempo de vendas", "vendas por mês",
-            "faturamento por mês", "histórico mensal de vendas"
-        ],
-        "sales_time_series_sku": [
-            "série temporal do sku", "histórico de vendas do sku", "evolução de vendas do sku",
-            "vendas por mês do sku", "faturamento por mês do sku", "histórico mensal do sku",
-            "série temporal do produto", "histórico de vendas do produto"
-        ],
-    }
-
+    # aliases for intents (legacy names -> canonical intent names)
     VOCAB_KEY_TO_INTENT = {
         "sales_time_series_sku": "sales_time_series",
     }
@@ -105,7 +58,7 @@ class RuleIntentClassifier:
             "oi", "olá", "eae", "tudo bem?", "bom dia", "boa tarde", "boa noite", "hey", "fala", "salve", "iai", "como vai", "tudo certo?", "oi, tudo bem?"
         ],
         "farewell": [
-            "tchau", "até mais", "até logo", "valeu", "flw", "adeus", "bye", "obrigado", "obrigada", "até a próxima"
+            "tchau", "até mais", "até logo", "valeu", "flw", "adeus", "bye", "obrigado", "obrigada", "até a próxima", "falou", "encerrar", "finalizar", "fim"
         ],
         "predict_stockout": [
             "o produto vai acabar?", "tem estoque desse item?", "vai zerar o estoque?", "ficaremos sem esse produto?", 
@@ -171,90 +124,141 @@ class RuleIntentClassifier:
         ]
     }
 
-    def __init__(self, use_embeddings: bool = True) -> None:
-        self._nlp = spacy.load("pt_core_news_sm")
-        self.use_embeddings = use_embeddings and EMBEDDING_AVAILABLE
+    def __init__(self, use_embeddings: bool = True, allow_model_download: bool = True) -> None:
+        global _NL_PARSER, _EMBEDDING_MODEL, _EXAMPLES_EMB, EMBEDDING_AVAILABLE
+        if _NL_PARSER is None:
+            try:
+                _NL_PARSER = spacy.load("pt_core_news_sm")
+            except Exception:
+                # Best-effort load; if it fails, set to None and continue
+                _NL_PARSER = None
+        self._nlp = _NL_PARSER
+        self.use_embeddings = use_embeddings
 
         self.embedding_model = None
+        self._examples_emb = {}
+        self._util = None
+        # No rule-based prefixes: we use semantic-only matching
         if self.use_embeddings:
             try:
-                self.embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-                self._examples_emb = {
-                    intent: self.embedding_model.encode(exs, convert_to_tensor=True)
-                    for intent, exs in self.INTENT_EXAMPLES.items()
-                }
+                # Import and cache the embedding model and embeddings to avoid re-loading
+                from sentence_transformers import SentenceTransformer, util as s_util
+                # If downloads are not allowed, check model exists in HF cache
+                model_name = "sentence-transformers/all-MiniLM-L6-v2"
+                model_cached = True
+                if not allow_model_download:
+                    try:
+                        # Try to fetch a small file from the local cache only
+                        hf_hub_download(repo_id=model_name, filename="config.json", repo_type="model", local_files_only=True)
+                        model_cached = True
+                    except Exception:
+                        model_cached = False
+
+                if not model_cached and not allow_model_download:
+                    logger.warning("Embedding model not in local cache and model download is disabled. Semantic detection is disabled.")
+                    self.use_embeddings = False
+                else:
+                    if _EMBEDDING_MODEL is None:
+                        logger.info("Loading embedding model (may download from HF). This can take a few seconds on first run.")
+                        _EMBEDDING_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
+                self.embedding_model = _EMBEDDING_MODEL
+                self._util = s_util
+                # compute per-intent mean embedding vector for faster and more stable similarity
+                if not _EXAMPLES_EMB:
+                    temp = {
+                        intent: cast(Any, _EMBEDDING_MODEL).encode(exs, convert_to_tensor=True)
+                        for intent, exs in self.INTENT_EXAMPLES.items()
+                    }
+                    # store mean vector per intent
+                    _EXAMPLES_EMB = {}
+                    for intent, v in temp.items():
+                        # if torch tensor, use mean(0), if numpy array, use mean(axis=0)
+                        # In practice, v is a torch tensor; cast to Any so static type
+                        # checkers don't complain about mean signature.
+                        mean_vec = cast(Any, v).mean(0)
+                        _EXAMPLES_EMB[intent] = mean_vec
+                self._examples_emb = _EXAMPLES_EMB
+                EMBEDDING_AVAILABLE = True
+                logger.info(f"Embedding model loaded: {type(self.embedding_model).__name__}; {len(self._examples_emb)} intents cached")
             except Exception as e:
-                logger.warning(f"Embedding model not available, semantic fallback disabled: {e}")
+                logger.warning(f"Embedding model not available, semantic detection disabled: {e}")
                 self.use_embeddings = False
 
     def _normalize(self, text: str) -> str:
         return unidecode.unidecode(text.lower())
 
-    def _bow_score(self, text: str) -> Dict[str, float]:
-        text_norm = self._normalize(text)
-        scores: Dict[str, float] = {k: 0.0 for k in self.VOCABULARY.keys()}
-
-        for key, patterns in self.VOCABULARY.items():
-            for p in patterns:
-                p_norm = self._normalize(p)
-                if " " in p_norm:
-                    tokens = [t for t in p_norm.split() if t]
-                    if all(t in text_norm for t in tokens):
-                        scores[key] += PHRASE_WEIGHT
-                else:
-                    if p_norm in text_norm:
-                        scores[key] += WORD_WEIGHT
-
-        return scores
-
-    def _semantic_fallback(self, text: str) -> Tuple[Optional[str], float]:
-        if not self.use_embeddings or not self.embedding_model:
-            return None, 0.0
+    def _semantic_detect(self, text: str) -> Tuple[Optional[str], float, float]:
+        """
+        Compute semantic similarity against example embeddings and return
+        the best intent and a confidence score along with the second best score.
+        """
+        if not self.use_embeddings or not self.embedding_model or not self._util:
+            return None, 0.0, 0.0
 
         text_emb = self.embedding_model.encode(text, convert_to_tensor=True)
         best_intent = None
-        best_score = 0.0
+        best_score = float("-inf")
+        second_score = float("-inf")
 
         for intent, ex_emb in self._examples_emb.items():
-            sim = util.cos_sim(text_emb, ex_emb).max().item()
+            sim_t = self._util.cos_sim(text_emb, ex_emb)
+            # returns a 1x1 tensor (since ex_emb is a single vector); get scalar
+            sim = sim_t.item() if hasattr(sim_t, "item") else float(sim_t)
             if sim > best_score:
+                second_score = best_score
                 best_score = sim
                 best_intent = intent
+            elif sim > second_score:
+                second_score = sim
 
+        # if second_score remained -inf, set to 0.0
+        if second_score == float("-inf"):
+            second_score = 0.0
+        if best_score == float("-inf"):
+            best_score = 0.0
+        return best_intent, float(best_score), float(second_score)
+
+    def intent_candidates(self, text: str) -> list[tuple[str, float]]:
+        """
+        Return a ranked list of intents and similarity scores for a given text.
+        Helpful for debugging and logging.
+        """
+        if not self.use_embeddings or not self.embedding_model or not self._util:
+            return []
+        text_emb = self.embedding_model.encode(text, convert_to_tensor=True)
+        results: list[tuple[str, float]] = []
+        for intent, ex_emb in self._examples_emb.items():
+            sim_t = self._util.cos_sim(text_emb, ex_emb)
+            sim = sim_t.item() if hasattr(sim_t, "item") else float(sim_t)
+            results.append((intent, float(sim)))
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results
+
+    def _semantic_fallback(self, text: str) -> Tuple[Optional[str], float]:
+        # keep for backwards compatibility: delegate to _semantic_detect
+        best_intent, best_score, _ = self._semantic_detect(text)
         if best_score >= SEMANTIC_THRESHOLD:
             return best_intent, best_score
         return None, best_score
 
     def detect_intent(self, text: str) -> str:
-        text_norm = self._normalize(text)
-        for intent, patterns in self.VOCABULARY.items():
-            for p in patterns:
-                if " " in self._normalize(p) and self._normalize(p) in text_norm:
-                    return self.VOCAB_KEY_TO_INTENT.get(intent, intent)
+        # Only semantic transformer-based intent detection is used now.
+        if not self.use_embeddings or not self.embedding_model:
+            logger.warning("Embedding model not available, returning 'unknown_intent' intent")
+            return "unknown_intent"
 
-        scores = self._bow_score(text)
+        best_intent, best_score, second_score = self._semantic_detect(text)
+        logger.debug(f"Semantic decision: best={best_intent} score={best_score:.3f} second={second_score:.3f}")
+        if self.use_embeddings:
+            candidates = self.intent_candidates(text)
+            logger.debug(f"Intent candidates (top 5): {candidates[:5]}")
+        # map aliases to canonical intent
+        if best_intent:
+            best_intent = self.VOCAB_KEY_TO_INTENT.get(best_intent, best_intent)
+            return best_intent
 
-        intent_scores: Dict[str, float] = {}
-        for key, score in scores.items():
-            final_intent = self.VOCAB_KEY_TO_INTENT.get(key, key)
-            intent_scores[final_intent] = intent_scores.get(final_intent, 0.0) + score
-
-        sorted_intents = sorted(intent_scores.items(), key=lambda x: x[1], reverse=True)
-        if not sorted_intents:
-            return "unknown"
-
-        top_intent, top_score = sorted_intents[0]
-        second_score = sorted_intents[1][1] if len(sorted_intents) > 1 else 0.0
-
-        if (top_score == 0 or (top_score - second_score) < MIN_SCORE_DELTA) and self.use_embeddings:
-            sem_intent, sem_score = self._semantic_fallback(text)
-            if sem_intent and sem_score is not None:
-                # se semântica sugere forte intenção e difere do top atual, usar
-                if sem_score - top_score >= -0.05:  # tolerância pequena
-                    return sem_intent
-
-        # senao, retorno do bow
-        return top_intent if top_score > 0 else "unknown"
+        # If we can't detect an intent with semantic embeddings
+        return "unknown_intent"
 
     def extract_entities(self, text: str) -> Dict[str, Any]:
         text_norm = unidecode.unidecode(text)
@@ -286,15 +290,16 @@ class RuleIntentClassifier:
     def execute(self, text: str) -> Tuple[str, Dict[str, Any]]:
         logger.debug(f"Classifying text: {text}")
         best_intent = self.detect_intent(text)
-        logger.debug(f"Detected intent (hybrid): {best_intent}")
+        logger.debug(f"Detected intent (semantic): {best_intent}")
 
         entities = self.extract_entities(text)
  
         try:
-            doc = self._nlp(text)
-            for ent in doc.ents:
-                if ent.label_.lower() in {"product", "produto", "sku"}:
-                    entities["sku"] = ent.text
+            if self._nlp:
+                doc = self._nlp(text)
+                for ent in doc.ents:
+                    if ent.label_.lower() in {"product", "produto", "sku"}:
+                        entities["sku"] = ent.text
         except Exception:
             logger.error("spaCy NER failed, continuing without NER override")
 
@@ -332,5 +337,9 @@ class RuleIntentClassifier:
                     params["period"] = {"type": "year", "year": entities["years"][0]}
                 else:
                     params["period"] = {"type": "next_month"}
+
+        # If unknown intent, keep original text in params for better UX in responses
+        if best_intent == "unknown_intent":
+            params.setdefault("original_text", text)
 
         return best_intent, params
