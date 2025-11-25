@@ -493,6 +493,22 @@ ALTER TABLE ONLY public."user" ALTER COLUMN id SET DEFAULT nextval('public.user_
 --
 
 COPY public.chat_history (id, message, user_id, user_message, created_at) FROM stdin;
+1	quantos clientes temos	13	t	2025-11-25 00:14:44.425102
+2	Desculpe, não entendi 'quantos clientes temos'. Posso ajudar com informações sobre vendas, estoque, previsões e análises de SKU.	13	f	2025-11-25 00:14:44.750123
+3	qual sku mais vendeu?	13	t	2025-11-25 00:15:57.758563
+4	Minha especialidade é análise de dados comerciais. Desculpe, não entendi 'qual sku mais vendeu?'. Que tal perguntar sobre vendas ou estoque?	13	f	2025-11-25 00:15:57.821567
+5	quanto temos de estoque?	13	t	2025-11-25 00:16:08.965617
+6	Minha especialidade é análise de dados comerciais. Desculpe, não entendi 'quanto temos de estoque?'. Que tal perguntar sobre vendas ou estoque?	13	f	2025-11-25 00:16:09.031617
+7	quanto temos de estoque?	13	t	2025-11-25 00:23:36.716677
+8	Minha especialidade é análise de dados comerciais. Desculpe, não entendi 'quanto temos de estoque?'. Que tal perguntar sobre vendas ou estoque?	13	f	2025-11-25 00:23:36.78167
+9	quanto temos de estoque?	13	t	2025-11-25 00:27:44.594804
+10	O total de itens em estoque é 0.	13	f	2025-11-25 00:27:44.659804
+11	quantos produtos diferentes temos?	13	t	2025-11-25 00:28:28.179841
+12	Encontramos 0 produtos diferentes no estoque.	13	f	2025-11-25 00:28:28.24244
+13	qual o melhor mes do sku 2	13	t	2025-11-25 00:29:11.22069
+14	Não encontrei registros de vendas para o SKU SKU_2 para determinar o melhor mês.	13	f	2025-11-25 00:29:11.283204
+15	qual o melhor mes do sku 4	13	t	2025-11-25 00:29:23.426088
+16	Não encontrei registros de vendas para o SKU SKU_4 para determinar o melhor mês.	13	f	2025-11-25 00:29:23.488126
 \.
 
 
@@ -19366,6 +19382,7 @@ COPY public.faturamento (id, data, cod_cliente, lote, origem, zs_gr_mercad, prod
 --
 
 COPY public.notification (id, type, message, details, created_at, visualized, "visualizedAt", "visualizedBy") FROM stdin;
+13	NEW_USER	New user registered: admin	{"user_id": 13, "timestamp": "2025-11-25T03:13:22.550497"}	2025-11-25 00:13:22.550002	f	\N	\N
 \.
 
 
@@ -19390,6 +19407,7 @@ COPY public.test (id, name) FROM stdin;
 --
 
 COPY public."user" (id, username, email, password, is_admin, is_active, receive_email, last_update, last_access) FROM stdin;
+13	admin	admin@example.com	$2b$12$4qsKfZ.LLQp58RRjvKnhvOCNwSAyDgwQQnNFT94D7Yxd0TQn9IOe2	f	t	t	2025-11-25 00:13:21.97427	2025-11-25 00:13:36.940635
 \.
 
 
@@ -19397,7 +19415,7 @@ COPY public."user" (id, username, email, password, is_admin, is_active, receive_
 -- Name: chat_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.chat_history_id_seq', 1, false);
+SELECT pg_catalog.setval('public.chat_history_id_seq', 16, true);
 
 
 --
@@ -19439,7 +19457,7 @@ SELECT pg_catalog.setval('public.faturamento_id_seq', 17343, true);
 -- Name: notification_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.notification_id_seq', 1, false);
+SELECT pg_catalog.setval('public.notification_id_seq', 13, true);
 
 
 --
@@ -19460,7 +19478,7 @@ SELECT pg_catalog.setval('public.test_id_seq', 1, false);
 -- Name: user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.user_id_seq', 1, false);
+SELECT pg_catalog.setval('public.user_id_seq', 13, true);
 
 
 --
