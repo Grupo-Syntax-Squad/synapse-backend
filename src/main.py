@@ -1,22 +1,24 @@
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
+
 import uvicorn
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy.orm import Session
-from fastapi.middleware.cors import CORSMiddleware
 
-from src.settings import settings
-from src.database.get_db import get_db, engine
+from src.database.get_db import engine, get_db
 from src.database.models import Base, Test
-from src.modules.root import GetRoot
-from src.schemas.basic_response import BasicResponse
-from src.routers import auth, notification, user, report, chat, websocket
+from src.logger_instance import logger
+from src.modules.data_loader import DataLoader
 from src.modules.report_scheduler import (
     scheduler,
     start_scheduler,
 )
-from src.logger_instance import logger
+from src.modules.root import GetRoot
+from src.routers import auth, chat, notification, report, user, websocket
+from src.schemas.basic_response import BasicResponse
+from src.settings import settings
 
 logger.debug(f"System settings: {settings}")
 
@@ -26,11 +28,11 @@ origins = [
 ]
 
 
-Base.metadata.create_all(bind=engine)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    Base.metadata.create_all(bind=engine)
+    with Session(engine) as session:
+        DataLoader(session).execute()
     if not settings.TESTING:
         start_scheduler()
     yield
