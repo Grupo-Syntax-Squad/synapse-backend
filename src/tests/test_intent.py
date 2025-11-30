@@ -1,10 +1,4 @@
 import pytest
-from src.nlp.intent_classifier import RuleIntentClassifier
-
-
-@pytest.fixture
-def classifier() -> RuleIntentClassifier:
-    return RuleIntentClassifier()
 
 
 @pytest.mark.parametrize(

@@ -8,9 +8,10 @@ from unittest.mock import patch
 
 from src.main import app
 from src.settings import settings
-from src.database.models import Base, Report
+from src.database.models import Base, Report, User
 from src.database.get_db import get_db
 from src.modules.report_scheduler import scheduler
+from src.nlp.intent_classifier import RuleIntentClassifier
 
 
 @pytest.fixture
@@ -80,3 +81,7 @@ def session(engine, tables) -> Generator[Session, None, None]:  # type: ignore[n
 def disable_scheduler() -> Generator[None, None, None]:
     with patch.object(scheduler, "start", lambda *a, **kw: None):
         yield
+
+@pytest.fixture
+def classifier() -> RuleIntentClassifier:
+    return RuleIntentClassifier()
