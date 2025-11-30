@@ -104,7 +104,7 @@ class Estoque(Base):  # type: ignore[valid-type, misc]
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     data: Mapped[datetime] = mapped_column(DateTime)
-    cod_cliente: Mapped[int] = mapped_column(ForeignKey("clientes.cod_cliente"))
+    cod_cliente: Mapped[int] = mapped_column(ForeignKey("clientes.cod_cliente", ondelete="CASCADE"))
     es_centro: Mapped[str] = mapped_column(String(50))
     tipo_material: Mapped[str] = mapped_column(String(100))
     origem: Mapped[str] = mapped_column(String(50))
@@ -122,7 +122,7 @@ class Faturamento(Base):  # type: ignore[valid-type, misc]
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     data: Mapped[datetime] = mapped_column(DateTime)
-    cod_cliente: Mapped[int] = mapped_column(ForeignKey("clientes.cod_cliente"))
+    cod_cliente: Mapped[int] = mapped_column(ForeignKey("clientes.cod_cliente", ondelete="CASCADE"))
     lote: Mapped[str] = mapped_column(String(50))
     origem: Mapped[str] = mapped_column(String(50))
     zs_gr_mercad: Mapped[str] = mapped_column(String(100))
