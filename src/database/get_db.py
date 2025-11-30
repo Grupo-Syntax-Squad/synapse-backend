@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
@@ -8,6 +9,9 @@ engine = create_engine(settings.DATABASE_URL, echo=False)
 SessionFactory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-def get_db() -> Session:
+def get_db() -> Generator[Session, None, None]:
     db = SessionFactory()
-    return db
+    try:
+        yield db
+    finally:
+        db.close()
