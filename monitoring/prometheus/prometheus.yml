@@ -7,4 +7,4 @@ scrape_configs:
       - targets: ["localhost:9090"]
   - job_name: "synapse"
     static_configs:
-      - targets: ["synapse:80"]
+      - targets: ["172.29.63.78:8000"]

@@ -1,17 +1,18 @@
 from datetime import datetime, timedelta
-import pytest
 from typing import Generator
-from fastapi.testclient import TestClient
-from sqlalchemy import Engine, create_engine
-from sqlalchemy.orm import sessionmaker, Session
 from unittest.mock import patch
 
-from src.main import app
-from src.settings import settings
-from src.database.models import Base, Report, User
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import Engine, create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
 from src.database.get_db import get_db
+from src.database.models import Base, Report
+from src.main import app
 from src.modules.report_scheduler import scheduler
 from src.nlp.intent_classifier import RuleIntentClassifier
+from src.settings import settings
 
 
 @pytest.fixture
@@ -81,6 +82,7 @@ def session(engine, tables) -> Generator[Session, None, None]:  # type: ignore[n
 def disable_scheduler() -> Generator[None, None, None]:
     with patch.object(scheduler, "start", lambda *a, **kw: None):
         yield
+
 
 @pytest.fixture
 def classifier() -> RuleIntentClassifier:
